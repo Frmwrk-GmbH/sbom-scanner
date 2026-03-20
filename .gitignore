@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+sbom.cyclonedx.json
+sbom-report.html
+sbom-report.pdf
+.idea/

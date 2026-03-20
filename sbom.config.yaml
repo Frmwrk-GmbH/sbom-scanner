@@ -1,0 +1,35 @@
+# SBOM Report Generator — Konfiguration
+#
+# Nur "project.name" ist Pflicht.
+# Alles andere wird automatisch erkannt.
+
+project:
+  name: my-app
+  version: "1.0.0"
+  description: ""
+
+# Ökosysteme: werden automatisch erkannt, wenn nicht angegeben.
+# Nur angeben, wenn Pfade vom Standard abweichen.
+#
+# sources:
+#   npm:
+#     package_json: package.json          # Standard
+#     lockfile: package-lock.json         # Standard
+#   pypi:
+#     requirements: requirements.txt      # Standard (pip-compile Format)
+#   pub:
+#     pubspec_yaml: pubspec.yaml          # Standard
+#     pubspec_lock: pubspec.lock          # Standard
+#   maven:
+#     android_dir: android                # Standard
+
+# Output-Pfade
+output:
+  sbom: sbom.cyclonedx.json
+  report: sbom-report.html
+
+# Optionen
+options:
+  skip_cve: false           # CVE-Scan überspringen
+  pdf: false                # Zusätzlich PDF generieren
+  workers: 20               # Parallele API-Anfragen
