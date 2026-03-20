@@ -1,0 +1,391 @@
+# German translations for sbom-report-generator.
+# Generated: 2026-03-21 09:30
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+
+#: configure.py:688
+msgid "\n  N) Project name   V) Version    O) Options ({})"
+msgstr "\n  N) Projektname    V) Version    O) Optionen ({})"
+
+#: generate_sbom.py:192
+msgid "\nSBOM generated: {}"
+msgstr "\nSBOM generiert: {}"
+
+#: configure.py:707
+msgid "    1. CVE scan:       {}"
+msgstr "    1. CVE-Scan:       {}"
+
+#: configure.py:708
+msgid "    2. Generate PDF:   {}"
+msgstr "    2. PDF generieren: {}"
+
+#: configure.py:709
+msgid "    3. Simple report:  {}"
+msgstr "    3. Simple-Report:  {}"
+
+#: configure.py:710
+msgid "    4. Workers:        {}"
+msgstr "    4. Workers:        {}"
+
+#: generate_sbom.py:195
+msgid "    {}: {} ({} outdated)"
+msgstr "    {}: {} ({} veraltet)"
+
+#: configure.py:478
+msgid "  CVE scan:       {}"
+msgstr "  CVE-Scan:       {}"
+
+#: configure.py:689
+msgid "  F) Finish         X) Cancel"
+msgstr "  F) Fertig         X) Abbrechen"
+
+#: generate_sbom.py:196
+msgid "  Format: CycloneDX 1.6"
+msgstr "  Format: CycloneDX 1.6"
+
+#: configure.py:479
+msgid "  Generate PDF:   {}"
+msgstr "  PDF generieren: {}"
+
+#: maven.py:106
+msgid "  Maven versions: {}/{} ..."
+msgstr "  Maven-Versionen: {}/{} ..."
+
+#: pypi.py:74
+msgid "  PyPI versions: {}/{} ..."
+msgstr "  PyPI-Versionen: {}/{} ..."
+
+#: configure.py:712
+msgid "  Selection [1-4/B]: "
+msgstr "  Auswahl [1-4/B]: "
+
+#: configure.py:692
+msgid "  Selection [1-{}/N/V/O/F/X]: "
+msgstr "  Auswahl [1-{}/N/V/O/F/X]: "
+
+#: configure.py:480
+msgid "  Simple report:  {}"
+msgstr "  Simple-Report:  {}"
+
+#: configure.py:481
+msgid "  Workers:        {}"
+msgstr "  Workers:        {}"
+
+#: npm.py:90
+msgid "  npm versions: {}/{} ..."
+msgstr "  npm-Versionen: {}/{} ..."
+
+#: generate_sbom.py:193
+msgid "  {} packages total:"
+msgstr "  {} Packages gesamt:"
+
+#: generate_sbom.py:143
+msgid "  {} packages, {} outdated"
+msgstr "  {} Packages, {} veraltet"
+
+#: configure.py:195
+msgid "# Generated for: {}"
+msgstr "# Generiert für: {}"
+
+#: configure.py:194
+msgid "# SBOM Report Generator — Configuration"
+msgstr "# SBOM Report Generator — Konfiguration"
+
+#: configure.py:781
+msgid "Accept all defaults without prompting"
+msgstr "Alle Defaults ohne Nachfrage akzeptieren"
+
+#: configure.py:524
+msgid "Activate"
+msgstr "Aktivieren"
+
+#: configure.py:525
+msgid "Back"
+msgstr "Zurück"
+
+#: configure.py:430
+msgid "CVE off"
+msgstr "CVE aus"
+
+#: configure.py:439
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: configure.py:695
+msgid "Cancelled."
+msgstr "Abgebrochen."
+
+#: configure.py:521
+msgid "Change label ({})"
+msgstr "Label ändern ({})"
+
+#: configure.py:522
+msgid "Change tags ({})"
+msgstr "Tags ändern ({})"
+
+#: generate_sbom.py:87
+msgid "Checked in: {}"
+msgstr "Geprüft in: {}"
+
+#: configure.py:590
+msgid "Config written:"
+msgstr "Config geschrieben:"
+
+#: configure.py:769
+msgid "Config written: {}"
+msgstr "Config geschrieben: {}"
+
+#: generate_sbom.py:201
+msgid "Configuration file (default: sbom.config.yaml)"
+msgstr "Konfigurationsdatei (Standard: sbom.config.yaml)"
+
+#: configure.py:308
+msgid "Create new (from scan results)"
+msgstr "Neu erstellen (aus Scan-Ergebnis)"
+
+#: configure.py:520
+msgid "Deactivate"
+msgstr "Deaktivieren"
+
+#: configure.py:435
+msgid "Default"
+msgstr "Standard"
+
+#: generate_sbom_report.py:723
+msgid "Dependency Tree"
+msgstr "Abhängigkeitsbaum"
+
+#: generate_sbom.py:83
+msgid "Detected: {}{}"
+msgstr "Erkannt: {}{}"
+
+#: configure.py:396
+msgid "Directory"
+msgstr "Verzeichnis"
+
+#: configure.py:438
+msgid "Done — Generate config ({} sources)"
+msgstr "Fertig — Config generieren ({} Quellen)"
+
+#: configure.py:395
+msgid "Ecosystem"
+msgstr "Ökosystem"
+
+#: configure.py:307
+msgid "Edit existing configuration"
+msgstr "Bestehende Konfiguration bearbeiten"
+
+#: generate_sbom.py:86
+msgid "Error: No supported ecosystems found in project."
+msgstr "Fehler: Keine unterstützten Ökosysteme im Projekt gefunden."
+
+#: pub.py:197
+msgid "Error: PyYAML is required for Dart/Flutter: pip install pyyaml"
+msgstr "Fehler: PyYAML wird für Dart/Flutter benötigt: pip install pyyaml"
+
+#: configure.py:515
+msgid "Files: {}"
+msgstr "Dateien: {}"
+
+#: generate_sbom.py:200
+msgid "Generic CycloneDX SBOM generator"
+msgstr "Generischer CycloneDX SBOM-Generator"
+
+#: configure.py:738
+msgid "Include?"
+msgstr "Aufnehmen?"
+
+#: configure.py:397
+msgid "Label"
+msgstr "Label"
+
+#: generate_sbom.py:107
+msgid "Loading latest versions for {} packages ..."
+msgstr "Lade Latest-Versionen für {} Packages ..."
+
+#: configure.py:770
+msgid "Next steps:"
+msgstr "Nächste Schritte:"
+
+#: configure.py:479
+msgid "No"
+msgstr "Nein"
+
+#: generate_sbom.py:103
+msgid "No packages found."
+msgstr "Keine Packages gefunden."
+
+#: configure.py:749
+msgid "No sources selected."
+msgstr "Keine Quellen ausgewählt."
+
+#: configure.py:802
+msgid "No supported lockfiles found."
+msgstr "Keine unterstützten Lockfiles gefunden."
+
+#: configure.py:764
+msgid "Not saved."
+msgstr "Nicht gespeichert."
+
+#: configure.py:478
+msgid "Off"
+msgstr "Aus"
+
+#: configure.py:478
+msgid "On"
+msgstr "An"
+
+#: configure.py:473
+msgid "Options"
+msgstr "Optionen"
+
+#: configure.py:436
+msgid "Options ({})"
+msgstr "Optionen ({})"
+
+#: configure.py:486
+msgid "Options:"
+msgstr "Optionen:"
+
+#: generate_sbom.py:203
+msgid "Output path (overrides config)"
+msgstr "Output-Pfad (überschreibt Config)"
+
+#: configure.py:780
+msgid "Output path for config"
+msgstr "Output-Pfad für Config"
+
+#: configure.py:496
+msgid "Parallel workers:"
+msgstr "Parallele Workers:"
+
+#: configure.py:779
+msgid "Project directory"
+msgstr "Projektverzeichnis"
+
+#: generate_sbom.py:202
+msgid "Project directory (default: current directory)"
+msgstr "Projektverzeichnis (Standard: aktuelles Verzeichnis)"
+
+#: configure.py:700
+msgid "Project name"
+msgstr "Projektname"
+
+#: configure.py:459
+msgid "Project name:"
+msgstr "Projektname:"
+
+#: configure.py:416
+msgid "Project name: {}"
+msgstr "Projektname: {}"
+
+#: generate_sbom.py:100
+msgid "Reading {} dependencies ..."
+msgstr "Lese {}-Dependencies ..."
+
+#: configure.py:580
+msgid "Save"
+msgstr "Speichern"
+
+#: configure.py:575
+msgid "Save to {}?"
+msgstr "Nach {} speichern?"
+
+#: configure.py:791
+msgid "Scanning project..."
+msgstr "Durchsuche Projekt..."
+
+#: configure.py:794
+msgid "Scanning: {}"
+msgstr "Durchsuche: {}"
+
+#: configure.py:445
+msgid "Select source to configure:"
+msgstr "Quelle auswählen zum Konfigurieren:"
+
+#: configure.py:626
+msgid "Selection [1-{}]: "
+msgstr "Auswahl [1-{}]: "
+
+#: generate_sbom_report.py:1272
+msgid "Simple report without tabs, search and filters"
+msgstr "Einfacher Report ohne Tabs, Suche und Filter"
+
+#: configure.py:782
+msgid "Simple text menu without TUI dependencies"
+msgstr "Einfaches Textmenü ohne TUI-Dependencies"
+
+#: generate_sbom.py:88
+msgid "Supported: {}"
+msgstr "Unterstützt: {}"
+
+#: configure.py:398
+msgid "Tags"
+msgstr "Tags"
+
+#: configure.py:741
+msgid "Tags (comma-separated)"
+msgstr "Tags (kommagetrennt)"
+
+#: configure.py:544
+msgid "Tags (comma-separated):"
+msgstr "Tags (kommagetrennt):"
+
+#: configure.py:702
+msgid "Version"
+msgstr "Version"
+
+#: configure.py:464
+msgid "Version:"
+msgstr "Version:"
+
+#: configure.py:417
+msgid "Version: {}"
+msgstr "Version: {}"
+
+#: maven.py:234
+msgid "Warning: No Gradle dependencies found"
+msgstr "Warnung: Keine Gradle-Dependencies gefunden"
+
+#: generate_sbom.py:37
+msgid "Warning: PyYAML not installed, using defaults"
+msgstr "Warnung: PyYAML nicht installiert, verwende Defaults"
+
+#: pub.py:210
+msgid "Warning: dart pub outdated failed: {}"
+msgstr "Warnung: dart pub outdated fehlgeschlagen: {}"
+
+#: grype.py:38
+msgid "Warning: grype failed: {}"
+msgstr "Warnung: grype fehlgeschlagen: {}"
+
+#: grype.py:35
+msgid "Warning: grype not installed, skipped"
+msgstr "Warnung: grype nicht installiert, übersprungen"
+
+#: maven.py:193
+msgid "Warning: no gradlew found, skipping Gradle dependencies"
+msgstr "Warnung: kein gradlew gefunden, überspringe Gradle-Dependencies"
+
+#: configure.py:722
+msgid "Workers"
+msgstr "Workers"
+
+#: configure.py:479
+msgid "Yes"
+msgstr "Ja"
+
+#: configure.py:305
+msgid "{} already exists:"
+msgstr "{} existiert bereits:"
+
+#: configure.py:573
+msgid "{} overwrite?"
+msgstr "{} überschreiben?"
+
+#: configure.py:448
+msgid "↑↓ navigate, Enter select"
+msgstr "↑↓ navigieren, Enter auswählen"

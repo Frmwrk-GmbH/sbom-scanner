@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sbom-scanner"
+dynamic = ["version"]
+description = "Multi-ecosystem CycloneDX 1.6 SBOM scanner with HTML report and CVE scanning"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Security",
+    "Topic :: Software Development :: Build Tools",
+]
+
+[project.optional-dependencies]
+yaml = ["pyyaml"]
+pdf = ["weasyprint"]
+python = ["pipdeptree"]
+tui = ["rich", "InquirerPy"]
+all = ["pyyaml", "pipdeptree", "rich", "InquirerPy"]
+
+[project.scripts]
+sbom = "sbom_scanner.cli:main"
+
+[tool.hatch.version]
+path = "src/sbom_scanner/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sbom_scanner"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/sbom_scanner/locales" = "sbom_scanner/locales"
