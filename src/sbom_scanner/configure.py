@@ -139,50 +139,18 @@ def _suggest_label(rel_dir: Path, project_dir: Path) -> str:
 
 
 def _read_project_name(project_dir: Path, findings: list[dict]) -> tuple[str, str]:
-    """Try to read project name and version from existing files."""
-    name = project_dir.name
-    version = "0.0.0"
-
-    pkg_json = project_dir / "package.json"
-    if pkg_json.exists():
-        try:
-            with open(pkg_json) as f:
-                data = json.load(f)
-            name = data.get("name", name)
-            version = data.get("version", version)
-            return name, version
-        except (json.JSONDecodeError, KeyError):
-            pass
-
-    cargo_toml = project_dir / "Cargo.toml"
-    if cargo_toml.exists():
-        try:
-            with open(cargo_toml) as f:
-                for line in f:
-                    m = re.match(r'^name\s*=\s*"([^"]+)"', line.strip())
-                    if m:
-                        name = m.group(1)
-                    m = re.match(r'^version\s*=\s*"([^"]+)"', line.strip())
-                    if m:
-                        version = m.group(1)
-        except OSError:
-            pass
-        if name != project_dir.name:
-            return name, version
-
-    pubspec = project_dir / "pubspec.yaml"
-    if pubspec.exists():
-        try:
-            import yaml
-            with open(pubspec) as f:
-                data = yaml.safe_load(f)
-            name = data.get("name", name)
-            version = data.get("version", version)
-            return name, version
-        except (ImportError, Exception):
-            pass
-
-    return name, version
+    """Try to read project name and version from ecosystem manifests."""
+    try:
+        from .ecosystems import REGISTRY
+        for eco in REGISTRY:
+            info = eco.read_project_info(project_dir)
+            if info:
+                name, version = info
+                if name:
+                    return name, version or "0.0.0"
+    except ImportError:
+        pass
+    return project_dir.name, "0.0.0"
 
 
 # ── Config generation ────────────────────────────────────────────────────────
@@ -254,15 +222,15 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
 
 
 def _is_default_config(item: dict) -> bool:
-    defaults = {
-        "npm": {"lockfile": "package-lock.json", "package_json": "package.json"},
-        "pypi": {"requirements": "requirements.txt"},
-        "pub": {"pubspec_lock": "pubspec.lock", "pubspec_yaml": "pubspec.yaml"},
-        "cargo": {"lockfile": "Cargo.lock", "cargo_toml": "Cargo.toml"},
-        "maven": {"gradle_dir": "."},
-    }
-    eco_defaults = defaults.get(item["ecosystem"], {})
-    return item["files"] == eco_defaults
+    """Check if this finding uses default paths (can be omitted from config)."""
+    try:
+        from .ecosystems import REGISTRY
+        for eco in REGISTRY:
+            if eco.name == item["ecosystem"]:
+                return item["files"] == eco.default_config()
+    except ImportError:
+        pass
+    return False
 
 
 # ── Interactive mode (Rich + InquirerPy) ─────────────────────────────────────
@@ -328,9 +296,9 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
             for eco_key, eco_val in sources.items():
                 entries = [eco_val] if isinstance(eco_val, dict) else (eco_val or [])
                 for entry in entries:
-                    for key in ("lockfile", "requirements", "pubspec_lock", "cargo_toml", "gradle_dir", "package_json"):
-                        if key in entry:
-                            configured_files.add(entry[key])
+                    for val in entry.values():
+                        if isinstance(val, str):
+                            configured_files.add(val)
 
             for f in findings:
                 # Check if this source appears in the config

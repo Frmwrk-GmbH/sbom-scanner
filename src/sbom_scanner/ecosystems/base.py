@@ -108,3 +108,31 @@ class Ecosystem(ABC):
               - icon: str
         """
         return None
+
+    def default_config(self) -> dict[str, str]:
+        """Return the default config values for this ecosystem.
+
+        Derived from scan_pattern(). Used by configure.py to check
+        whether a finding uses default paths (and can be omitted from config).
+        """
+        pat = self.scan_pattern()
+        if not pat:
+            return {}
+        config_keys = pat.get("config_keys", {})
+        # Invert: {config_key: filename} e.g. {"lockfile": "package-lock.json"}
+        defaults = {v: k for k, v in config_keys.items()}
+        # Directory-based ecosystems
+        if "config_dir_key" in pat:
+            defaults[pat["config_dir_key"]] = "."
+        return defaults
+
+    def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
+        """Try to read project name and version from this ecosystem's manifest.
+
+        Override in ecosystems that have manifest files with name/version
+        (e.g. package.json, Cargo.toml, pubspec.yaml).
+
+        Returns:
+            (name, version) tuple, or None if not available.
+        """
+        return None

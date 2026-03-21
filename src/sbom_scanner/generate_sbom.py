@@ -69,12 +69,12 @@ def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
             if eco.detect(project_dir, eco_config):
                 label = eco_config.get("label", "")
                 if not label and len(eco_configs) > 1:
-                    # Derive auto-label from path
-                    for key in ("lockfile", "package_json", "requirements", "cargo_toml", "pubspec_yaml", "android_dir"):
-                        if key in eco_config:
-                            label = str(Path(eco_config[key]).parent)
+                    # Derive auto-label from first config value that's a path
+                    for value in eco_config.values():
+                        if isinstance(value, str) and ("/" in value or "." in value):
+                            label = str(Path(value).parent)
                             if label == ".":
-                                label = eco_config[key]
+                                label = value
                             break
                     if not label:
                         label = f"#{idx + 1}"

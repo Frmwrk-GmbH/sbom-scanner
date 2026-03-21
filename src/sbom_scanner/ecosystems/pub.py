@@ -43,6 +43,20 @@ class PubEcosystem(Ecosystem):
             "icon": "🎯",
         }
 
+    def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
+        pubspec = project_dir / "pubspec.yaml"
+        if not pubspec.exists():
+            return None
+        try:
+            yaml = self._load_yaml()
+            with open(pubspec) as f:
+                data = yaml.safe_load(f)
+            name = data.get("name", "")
+            version = data.get("version", "")
+            return (name, version) if name else None
+        except Exception:
+            return None
+
     def detect(self, project_dir: Path, config: dict) -> bool:
         yaml_path = project_dir / config.get("pubspec_yaml", "pubspec.yaml")
         lock_path = project_dir / config.get("pubspec_lock", "pubspec.lock")

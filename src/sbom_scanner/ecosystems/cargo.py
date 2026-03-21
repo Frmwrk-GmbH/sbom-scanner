@@ -39,6 +39,24 @@ class CargoEcosystem(Ecosystem):
             "icon": "🦀",
         }
 
+    def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
+        toml = project_dir / "Cargo.toml"
+        if not toml.exists():
+            return None
+        name = version = ""
+        try:
+            with open(toml) as f:
+                for line in f:
+                    m = re.match(r'^name\s*=\s*"([^"]+)"', line.strip())
+                    if m:
+                        name = m.group(1)
+                    m = re.match(r'^version\s*=\s*"([^"]+)"', line.strip())
+                    if m:
+                        version = m.group(1)
+            return (name, version) if name else None
+        except OSError:
+            return None
+
     def detect(self, project_dir: Path, config: dict) -> bool:
         lock = project_dir / config.get("lockfile", "Cargo.lock")
         toml = project_dir / config.get("cargo_toml", "Cargo.toml")

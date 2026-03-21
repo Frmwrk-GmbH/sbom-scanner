@@ -42,6 +42,19 @@ class NpmEcosystem(Ecosystem):
             "icon": "📦",
         }
 
+    def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
+        pkg = project_dir / "package.json"
+        if not pkg.exists():
+            return None
+        try:
+            with open(pkg) as f:
+                data = json.load(f)
+            name = data.get("name", "")
+            version = data.get("version", "")
+            return (name, version) if name else None
+        except (json.JSONDecodeError, OSError):
+            return None
+
     def detect(self, project_dir: Path, config: dict) -> bool:
         pkg = project_dir / config.get("package_json", "package.json")
         if not pkg.exists():
