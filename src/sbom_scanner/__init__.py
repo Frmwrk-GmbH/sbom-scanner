@@ -13,7 +13,7 @@ Library usage:
     generate_report(sbom_path, project / "sbom-report.html")
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 from pathlib import Path
 
