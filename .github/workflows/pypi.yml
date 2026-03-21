@@ -32,5 +32,10 @@ jobs:
       - name: Build package
         run: python -m build
 
+      - name: List built artifacts
+        run: ls -lh dist/ && python -m zipfile -l dist/*.whl | head -20
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
