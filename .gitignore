@@ -10,3 +10,4 @@ sbom-report.html
 sbom-report.pdf
 .idea/
 .env
+_version.py
