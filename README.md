@@ -443,6 +443,29 @@ sbom-scanner/
             └── de/LC_MESSAGES/         # German translation (.po/.mo)
 ```
 
+## Docker
+
+Pre-built image with grype and osv-scanner included:
+
+```bash
+# Scan
+docker run -v $(pwd):/project ghcr.io/frmwrk-gmbh/sbom-scanner scan
+
+# Report
+docker run -v $(pwd):/project ghcr.io/frmwrk-gmbh/sbom-scanner report --skip-cve
+
+# JSON report
+docker run -v $(pwd):/project ghcr.io/frmwrk-gmbh/sbom-scanner report --format json
+
+# Interactive configure
+docker run -it -v $(pwd):/project ghcr.io/frmwrk-gmbh/sbom-scanner configure
+
+# Version
+docker run ghcr.io/frmwrk-gmbh/sbom-scanner version
+```
+
+The image mounts your project at `/project`. All output files (SBOM, reports) are written there.
+
 ## CI/CD Integration
 
 ### GitLab CI
@@ -473,7 +496,21 @@ sbom:
     sbom report --project-dir . --format json --skip-cve
 ```
 
-### With CVE scanning
+### With Docker (includes CVE scanners)
+
+```yaml
+sbom:
+  image: ghcr.io/frmwrk-gmbh/sbom-scanner:latest
+  script:
+    - sbom scan --project-dir .
+    - sbom report --project-dir .
+  artifacts:
+    paths:
+      - sbom.cyclonedx.json
+      - sbom-report.html
+```
+
+### With pip + CVE scanning
 
 ```yaml
 before_script:
