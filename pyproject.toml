@@ -23,6 +23,7 @@ pdf = ["weasyprint"]
 python = ["pipdeptree"]
 tui = ["rich", "InquirerPy"]
 all = ["pyyaml", "pipdeptree", "rich", "InquirerPy"]
+dev = ["pytest"]
 
 [project.scripts]
 sbom = "sbom_scanner.cli:main"
