@@ -52,6 +52,18 @@ _PATTERNS_CACHE: list[dict] | None = None
 def _get_ecosystem_icons() -> dict[str, str]:
     return {p["ecosystem"]: p.get("icon", "") for p in _get_ecosystem_patterns()}
 
+
+def _get_eco_options(ecosystem_name: str) -> list[dict]:
+    """Get config options for an ecosystem from the registry."""
+    try:
+        from .ecosystems import REGISTRY
+        for eco in REGISTRY:
+            if eco.name == ecosystem_name:
+                return eco.config_options()
+    except ImportError:
+        pass
+    return []
+
 # Directories to skip during traversal
 SKIP_DIRS = {
     "node_modules", ".git", ".svn", ".hg", "__pycache__", ".dart_tool",
@@ -196,6 +208,7 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
                 if item.get("tags"):
                     tags_str = ", ".join(item["tags"])
                     lines.append(f"    tags: [{tags_str}]")
+                _write_eco_options(lines, item, "    ")
             else:
                 for item in items:
                     lines.append(f"    - label: {item.get('label', '')}")
@@ -204,6 +217,7 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
                     if item.get("tags"):
                         tags_str = ", ".join(item["tags"])
                         lines.append(f"      tags: [{tags_str}]")
+                    _write_eco_options(lines, item, "      ")
 
     # Options (only non-default values)
     defaults = {"skip_cve": False, "pdf": False, "simple": False, "workers": 20}
@@ -219,6 +233,26 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
 
     lines.append("")
     return "\n".join(lines)
+
+
+def _write_eco_options(lines: list[str], item: dict, indent: str) -> None:
+    """Write non-default ecosystem options to config YAML lines."""
+    eco_opts = item.get("eco_options", {})
+    if not eco_opts:
+        return
+    eco_options = _get_eco_options(item["ecosystem"])
+    defaults = {o["key"]: o["default"] for o in eco_options}
+    for key, value in eco_opts.items():
+        if value == defaults.get(key):
+            continue
+        if isinstance(value, bool):
+            lines.append(f"{indent}{key}: {'true' if value else 'false'}")
+        elif isinstance(value, list):
+            lines.append(f"{indent}{key}:")
+            for v in value:
+                lines.append(f"{indent}  - {v}")
+        else:
+            lines.append(f"{indent}{key}: {value}")
 
 
 def _is_default_config(item: dict) -> bool:
@@ -336,6 +370,7 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
         f.setdefault("enabled", True)
         f.setdefault("label", f["label_suggestion"])
         f.setdefault("tags", [])
+        f.setdefault("eco_options", {})
 
     # ── Main menu loop ──
     cursor_idx = 0
@@ -485,10 +520,18 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
 
             # Toggle + configure as select
             sub_choices = []
+            # Get ecosystem-specific options
+            eco_options = _get_eco_options(finding["ecosystem"])
+
             if finding["enabled"]:
                 sub_choices.append({"name": "  ○  " + _("Deactivate"), "value": "disable"})
                 sub_choices.append({"name": "  ✎  " + _("Change label ({})").format(finding['label'] or '—'), "value": "label"})
                 sub_choices.append({"name": "  #  " + _("Change tags ({})").format(', '.join(finding['tags']) or '—'), "value": "tags"})
+                if eco_options:
+                    opts = finding.get("eco_options", {})
+                    non_default = sum(1 for o in eco_options if opts.get(o["key"], o["default"]) != o["default"])
+                    opts_label = f"{non_default} custom" if non_default else _("Default")
+                    sub_choices.append({"name": f"  ⚙  " + _("Options ({})").format(opts_label), "value": "eco_options"})
             else:
                 sub_choices.append({"name": "  ●  " + _("Activate"), "value": "enable"})
             sub_choices.append({"name": "  ←  " + _("Back"), "value": "back"})
@@ -514,6 +557,61 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
                     default=", ".join(finding["tags"]),
                 ).execute()
                 finding["tags"] = [t.strip() for t in tags_input.split(",") if t.strip()] if tags_input else []
+            elif sub_action == "eco_options":
+                opts = finding.setdefault("eco_options", {})
+                opt_cursor = eco_options[0]["key"] if eco_options else None
+                while True:
+                    console.clear()
+                    console.print(f"\n  ⚙  {finding['display']} — {_('Options')}\n")
+                    opt_choices = []
+                    for o in eco_options:
+                        val = opts.get(o["key"], o["default"])
+                        if o["type"] == "bool":
+                            display_val = _("Yes") if val else _("No")
+                            opt_choices.append({"name": f"  {o['label']}: {display_val}", "value": o["key"]})
+                        elif o["type"] == "enum":
+                            opt_choices.append({"name": f"  {o['label']}: {val}", "value": o["key"]})
+                        elif o["type"] == "multi-select":
+                            display_val = ", ".join(val) if isinstance(val, list) else str(val)
+                            opt_choices.append({"name": f"  {o['label']}: {display_val}", "value": o["key"]})
+                    opt_choices.append(Separator())
+                    opt_choices.append({"name": "  ←  " + _("Back"), "value": "back"})
+
+                    opt_action = inquirer.select(
+                        message=_("Options:"),
+                        choices=opt_choices,
+                        default=opt_cursor,
+                        instruction="",
+                    ).execute()
+
+                    if opt_action == "back":
+                        break
+
+                    opt_def = next((o for o in eco_options if o["key"] == opt_action), None)
+                    if not opt_def:
+                        continue
+
+                    if opt_def["type"] == "bool":
+                        opts[opt_action] = not opts.get(opt_action, opt_def["default"])
+                    elif opt_def["type"] == "enum":
+                        opts[opt_action] = inquirer.select(
+                            message=opt_def["label"] + ":",
+                            choices=opt_def["choices"],
+                            default=opts.get(opt_action, opt_def["default"]),
+                        ).execute()
+                    elif opt_def["type"] == "multi-select":
+                        current = opts.get(opt_action, opt_def["default"])
+                        choices = [
+                            {"name": c, "value": c, "enabled": c in current}
+                            for c in opt_def["choices"]
+                        ]
+                        opts[opt_action] = inquirer.checkbox(
+                            message=opt_def["label"] + ":",
+                            choices=choices,
+                            instruction="Space = toggle, Enter = confirm",
+                        ).execute()
+
+                    opt_cursor = opt_action
 
             # Next entry, or options if last
             if idx + 1 < len(findings):
@@ -632,6 +730,7 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
         f.setdefault("enabled", True)
         f.setdefault("label", f["label_suggestion"])
         f.setdefault("tags", [])
+        f.setdefault("eco_options", {})
 
     # ── Main menu loop ──
     while True:
@@ -709,6 +808,24 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
                         finding["label"] = _prompt_str("  " + _("Label"), finding["label"])
                         tags_input = _prompt_str("  " + _("Tags (comma-separated)"), ", ".join(finding["tags"]))
                         finding["tags"] = [t.strip() for t in tags_input.split(",") if t.strip()] if tags_input else []
+
+                        # Ecosystem-specific options
+                        eco_options = _get_eco_options(finding["ecosystem"])
+                        if eco_options:
+                            opts = finding.setdefault("eco_options", {})
+                            print(f"\n  {_('Options')}:")
+                            for o in eco_options:
+                                val = opts.get(o["key"], o["default"])
+                                if o["type"] == "bool":
+                                    opts[o["key"]] = _prompt_yn(f"    {o['label']}", val)
+                                elif o["type"] == "enum":
+                                    print(f"    {o['label']} ({', '.join(o['choices'])})")
+                                    opts[o["key"]] = _prompt_str(f"    ", str(val))
+                                elif o["type"] == "multi-select":
+                                    current = ", ".join(val) if isinstance(val, list) else str(val)
+                                    print(f"    {o['label']} ({', '.join(o['choices'])})")
+                                    result = _prompt_str(f"    " + _("Selection (comma-separated)"), current)
+                                    opts[o["key"]] = [v.strip() for v in result.split(",") if v.strip()]
             except ValueError:
                 pass
 

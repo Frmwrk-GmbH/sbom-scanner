@@ -51,6 +51,16 @@ class MavenEcosystem(Ecosystem):
             "icon": "☕",
         }
 
+    def config_options(self) -> list[dict]:
+        return [
+            {"key": "configurations", "label": "Gradle configurations", "type": "multi-select",
+             "default": ["runtimeClasspath"],
+             "choices": ["runtimeClasspath", "compileClasspath", "testRuntimeClasspath", "testCompileClasspath"],
+             "description": "Which Gradle configurations to scan"},
+            {"key": "include_subprojects", "label": "Include subprojects", "type": "bool", "default": True,
+             "description": "Scan Gradle subprojects"},
+        ]
+
     def detect(self, project_dir: Path, config: dict) -> bool:
         gradle_dir = project_dir / config.get("gradle_dir", ".")
         # Supports: build.gradle, build.gradle.kts, gradle-dependencies.json
@@ -80,8 +90,24 @@ class MavenEcosystem(Ecosystem):
             else:
                 gradle_dir = project_dir / "android"
 
-        configuration = config.get("configuration", "runtimeClasspath")
-        return self._get_gradle_dependencies(gradle_dir, configuration)
+        configurations = config.get("configurations", [config.get("configuration", "runtimeClasspath")])
+        if isinstance(configurations, str):
+            configurations = [configurations]
+        include_subprojects = config.get("include_subprojects", True)
+
+        all_packages: dict[str, dict] = {}
+        for configuration in configurations:
+            deps = self._get_gradle_dependencies(gradle_dir, configuration, include_subprojects=include_subprojects)
+            for dep in deps:
+                key = f"{dep['group']}:{dep['name']}"
+                if key not in all_packages:
+                    all_packages[key] = dep
+                else:
+                    existing = all_packages[key]
+                    if dep.get("dep_type") == "direct" and existing.get("dep_type") != "direct":
+                        existing["dep_type"] = "direct"
+
+        return list(all_packages.values())
 
     def fetch_latest_versions(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
         results: dict[str, str] = {}
@@ -180,7 +206,8 @@ class MavenEcosystem(Ecosystem):
         return None
 
     @classmethod
-    def _get_gradle_dependencies(cls, gradle_dir: Path, configuration: str = "runtimeClasspath") -> list[dict]:
+    def _get_gradle_dependencies(cls, gradle_dir: Path, configuration: str = "runtimeClasspath",
+                                 include_subprojects: bool = True) -> list[dict]:
         # 1. Pre-existing JSON file (custom Gradle task)
         deps_file = gradle_dir / "gradle-dependencies.json"
         if deps_file.exists():
@@ -194,10 +221,11 @@ class MavenEcosystem(Ecosystem):
             return []
 
         # Discover subprojects
-        subprojects = cls._get_gradle_subprojects(gradlew, gradle_dir)
         tasks = [":dependencies"]  # Root
-        for sp in subprojects:
-            tasks.append(f":{sp}:dependencies")
+        if include_subprojects:
+            subprojects = cls._get_gradle_subprojects(gradlew, gradle_dir)
+            for sp in subprojects:
+                tasks.append(f":{sp}:dependencies")
 
         all_deps: dict[str, dict] = {}  # key -> dep dict (dedupliziert)
 

@@ -42,6 +42,13 @@ class PypiEcosystem(Ecosystem):
             "icon": "🐍",
         }
 
+    def config_options(self) -> list[dict]:
+        return [
+            {"key": "dep_tree_method", "label": "Dependency tree method", "type": "enum", "default": "auto",
+             "choices": ["auto", "pipdeptree", "pip-compile", "flat"],
+             "description": "How to resolve transitive dependencies"},
+        ]
+
     def detect(self, project_dir: Path, config: dict) -> bool:
         req = project_dir / config.get("requirements", "requirements.txt")
         return req.exists()
@@ -50,12 +57,25 @@ class PypiEcosystem(Ecosystem):
         req_path = project_dir / config.get("requirements", "requirements.txt")
         packages = self._parse_requirements_txt(req_path)
 
-        # Plain requirements.txt (no pip-compile): use pipdeptree for transitive deps
-        has_via = any(p.get("via") is not None for p in packages)
-        if not has_via:
+        dep_tree_method = config.get("dep_tree_method", "auto")
+
+        if dep_tree_method == "flat":
+            # No transitive dependency resolution
+            pass
+        elif dep_tree_method == "pipdeptree":
             tree = self._run_pipdeptree([p["name"] for p in packages])
             if tree:
                 packages = self._merge_pipdeptree(packages, tree)
+        elif dep_tree_method == "pip-compile":
+            # Use pip-compile via comments only (no pipdeptree fallback)
+            pass
+        else:
+            # "auto": original behavior — use pipdeptree if no pip-compile via comments
+            has_via = any(p.get("via") is not None for p in packages)
+            if not has_via:
+                tree = self._run_pipdeptree([p["name"] for p in packages])
+                if tree:
+                    packages = self._merge_pipdeptree(packages, tree)
 
         return packages
 

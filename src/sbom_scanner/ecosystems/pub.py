@@ -43,6 +43,12 @@ class PubEcosystem(Ecosystem):
             "icon": "🎯",
         }
 
+    def config_options(self) -> list[dict]:
+        return [
+            {"key": "include_dev", "label": "Include dev dependencies", "type": "bool", "default": True,
+             "description": "Include dev_dependencies in the scan"},
+        ]
+
     def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
         pubspec = project_dir / "pubspec.yaml"
         if not pubspec.exists():
@@ -110,6 +116,9 @@ class PubEcosystem(Ecosystem):
             pkg["is_advisory"] = outdated.get("isCurrentAffectedByAdvisory", False)
 
             packages.append(pkg)
+
+        if not config.get("include_dev", True):
+            packages = [p for p in packages if p["dep_type"] != "direct dev"]
 
         # Store pubspec_yaml data for get_direct_purls and metadata
         self._last_pubspec_yaml = pubspec_yaml

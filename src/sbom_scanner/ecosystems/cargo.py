@@ -39,6 +39,14 @@ class CargoEcosystem(Ecosystem):
             "icon": "🦀",
         }
 
+    def config_options(self) -> list[dict]:
+        return [
+            {"key": "include_dev", "label": "Include dev dependencies", "type": "bool", "default": True,
+             "description": "Include [dev-dependencies] in the scan"},
+            {"key": "include_build", "label": "Include build dependencies", "type": "bool", "default": False,
+             "description": "Include [build-dependencies] in the scan"},
+        ]
+
     def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
         toml = project_dir / "Cargo.toml"
         if not toml.exists():
@@ -68,6 +76,10 @@ class CargoEcosystem(Ecosystem):
 
         direct_deps = self._parse_cargo_toml(toml_path)
         packages = self._parse_cargo_lock(lock_path, direct_deps)
+
+        if not config.get("include_dev", True):
+            packages = [p for p in packages if p["dep_type"] != "direct dev"]
+
         return packages
 
     def fetch_latest_versions(self, packages: list[dict], workers: int = 20) -> dict[str, str]:

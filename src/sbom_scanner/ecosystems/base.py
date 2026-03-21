@@ -126,6 +126,19 @@ class Ecosystem(ABC):
             defaults[pat["config_dir_key"]] = "."
         return defaults
 
+    def config_options(self) -> list[dict]:
+        """Return ecosystem-specific config options for the configurator.
+
+        Each option is a dict with:
+          - key: str — config key name
+          - label: str — display label
+          - type: "bool" | "enum" | "multi-select"
+          - default: any — default value (list for multi-select)
+          - choices: list[str] — for enum and multi-select types (optional)
+          - description: str — help text
+        """
+        return []
+
     def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
         """Try to read project name and version from this ecosystem's manifest.
 

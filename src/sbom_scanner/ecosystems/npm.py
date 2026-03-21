@@ -42,6 +42,14 @@ class NpmEcosystem(Ecosystem):
             "icon": "📦",
         }
 
+    def config_options(self) -> list[dict]:
+        return [
+            {"key": "include_dev", "label": "Include dev dependencies", "type": "bool", "default": True,
+             "description": "Include devDependencies in the scan"},
+            {"key": "include_optional", "label": "Include optional dependencies", "type": "bool", "default": True,
+             "description": "Include optionalDependencies in the scan"},
+        ]
+
     def read_project_info(self, project_dir: Path) -> tuple[str, str] | None:
         pkg = project_dir / "package.json"
         if not pkg.exists():
@@ -81,11 +89,18 @@ class NpmEcosystem(Ecosystem):
 
         direct_deps = set(pkg_json.get("dependencies", {}).keys())
         dev_deps = set(pkg_json.get("devDependencies", {}).keys())
+        include_dev = config.get("include_dev", True)
+        include_optional = config.get("include_optional", True)
 
         if lock_path.name == "yarn.lock":
-            return self._parse_yarn_lock(lock_path, direct_deps, dev_deps)
+            packages = self._parse_yarn_lock(lock_path, direct_deps, dev_deps)
         else:
-            return self._parse_package_lock(lock_path, direct_deps, dev_deps)
+            packages = self._parse_package_lock(lock_path, direct_deps, dev_deps)
+
+        if not include_dev:
+            packages = [p for p in packages if p["dep_type"] not in ("direct dev", "dev transitive")]
+
+        return packages
 
     def fetch_latest_versions(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
         results: dict[str, str] = {}
