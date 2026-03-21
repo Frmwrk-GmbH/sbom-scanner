@@ -14,13 +14,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for hatch-vcs version detection
+          fetch-tags: true
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install build tools
-        run: python -m pip install --upgrade build
+        run: python -m pip install --upgrade build hatch-vcs
+
+      - name: Verify version from tag
+        run: |
+          python -c "from setuptools_scm import get_version; v = get_version(); print(f'Version: {v}')"
 
       - name: Build package
         run: python -m build
