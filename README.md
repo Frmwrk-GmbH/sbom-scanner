@@ -1,24 +1,23 @@
 # SBOM Scanner
 
-A generic SBOM and HTML report generator for software projects. Produces a [CycloneDX 1.6](https://cyclonedx.org/) SBOM of all dependencies (including transitive) and an interactive HTML report with CVE scanning and version analysis.
+A modular, multi-ecosystem SBOM scanner for software projects. Produces a [CycloneDX 1.6](https://cyclonedx.org/) SBOM of all dependencies (including transitive) and generates reports in multiple formats with CVE scanning and version analysis.
 
 ## Features
 
-- **Multi-ecosystem** — npm, PyPI, Dart/Flutter, Maven/Gradle, Rust/Cargo, yarn
+- **Multi-ecosystem** — npm, yarn, PyPI, Dart/Flutter, Maven/Gradle, Rust/Cargo
 - **Multiroot / Monorepo** — multiple lockfiles per ecosystem, with labels and tags
 - **Gradle subprojects** — automatic detection and scanning of all submodules
+- **Ecosystem-specific options** — include/exclude dev deps, choose dependency tree method, select Gradle configurations
 - **Auto-detect** — discovers ecosystems automatically from lockfiles
 - **Auto-configurator** — recursively scans projects and generates config interactively (fancy TUI or simple text mode)
 - **CVE scanning** — pluggable scanner architecture with [grype](https://github.com/anchore/grype) and [osv-scanner](https://github.com/google/osv-scanner) built in
 - **Latest-version check** — parallel lookups against npm, PyPI, crates.io, Maven Central, Google Maven
-- **HTML report** — tabs, search, filters (dependency type, module, status), dark mode, print styles
+- **Multiple output formats** — HTML (interactive), simple HTML, PDF, JSON, CSV
 - **Dependency tree** — expandable, animated, outdated descendants bubble up, sub-tabs per ecosystem/module
-- **PDF export** — via weasyprint, Chrome headless, or wkhtmltopdf
-- **Two report modes** — interactive (tabs/JS) with `--simple` fallback (flat, no JS)
-- **Fully modular** — new ecosystem or CVE scanner = one file + registry entry, no changes to the report generator
+- **Fully modular** — three plugin registries: ecosystems, scanners, renderers — each extensible with one file + registry entry
 - **Library API** — directly importable (`from sbom_scanner import generate_sbom, generate_report`)
 - **i18n** — English by default, German translation included (`--lang de`)
-- **Installable** — `pip install` with three CLI commands
+- **Installable** — `pip install` with a single `sbom` compound command
 
 ## Quickstart
 
@@ -29,11 +28,14 @@ pip install sbom-scanner[all]
 # 1. Generate config (interactive — scans the project and asks)
 sbom configure --project-dir /path/to/project
 
-# 2. Generate SBOM
+# 2. Scan dependencies and generate SBOM
 sbom scan --project-dir /path/to/project
 
-# 3. Generate HTML report
+# 3. Generate report
 sbom report --project-dir /path/to/project
+sbom report --project-dir /path/to/project --format json
+sbom report --project-dir /path/to/project --format csv
+sbom report --project-dir /path/to/project --format pdf
 
 # Open report
 open /path/to/project/sbom-report.html
@@ -44,7 +46,7 @@ Step 1 is optional — without a config file, ecosystems are auto-detected with 
 ## Installation
 
 ```bash
-# From PyPI (once published)
+# From PyPI
 pip install sbom-scanner[all]
 
 # From the repository
@@ -62,7 +64,7 @@ pip install -e .[all]
 | `python` | pipdeptree | Transitive Python deps and dependency graph |
 | `pdf` | weasyprint | PDF export (alternative: Chrome headless) |
 | `tui` | rich, InquirerPy | Fancy interactive configurator |
-| `all` | PyYAML + pipdeptree + rich + InquirerPy | Recommended |
+| `all` | all of the above | Recommended |
 
 **External tools (optional):**
 
@@ -72,6 +74,18 @@ pip install -e .[all]
 | [osv-scanner](https://github.com/google/osv-scanner) | CVE scanning |
 | Google Chrome / Chromium | PDF export (alternative to weasyprint) |
 | `dart` CLI | Dart/Flutter outdated check |
+
+## Output Formats
+
+| Format | Flag | Description |
+|---|---|---|
+| `html` | `--format html` (default) | Interactive report with tabs, search, filters, dependency tree, dark mode |
+| `simple-html` | `--format simple-html` | Flat HTML without JavaScript — suitable for email or archiving |
+| `pdf` | `--format pdf` | PDF via weasyprint, Chrome headless, or wkhtmltopdf |
+| `json` | `--format json` | Structured JSON with metadata, vulnerabilities, and per-ecosystem package data |
+| `csv` | `--format csv` | Flat CSV for import into Excel, Google Sheets, or databases |
+
+Backward-compatible aliases: `--simple` = `--format simple-html`, `--pdf` = `--format pdf`
 
 ## Configuration
 
@@ -99,26 +113,33 @@ sources:
   npm:
     package_json: package.json        # default
     lockfile: package-lock.json       # default (also supports yarn.lock)
+    include_dev: true                 # include devDependencies (default: true)
+    include_optional: true            # include optionalDependencies (default: true)
   pypi:
     requirements: requirements.txt    # default (pip-compile or plain)
+    dep_tree_method: auto             # auto | pipdeptree | pip-compile | flat
   pub:
     pubspec_yaml: pubspec.yaml        # default
     pubspec_lock: pubspec.lock        # default
+    include_dev: true                 # include dev_dependencies (default: true)
   maven:
     gradle_dir: .                     # default (root with build.gradle)
-    configuration: runtimeClasspath   # default
+    configurations:                   # Gradle configurations to scan
+      - runtimeClasspath              # default
+    include_subprojects: true         # scan subprojects (default: true)
   cargo:
     cargo_toml: Cargo.toml            # default
     lockfile: Cargo.lock              # default
+    include_dev: true                 # include [dev-dependencies] (default: true)
+    include_build: false              # include [build-dependencies] (default: false)
 
 output:
   sbom: sbom.cyclonedx.json
   report: sbom-report.html
+  format: html                        # html | simple-html | pdf | json | csv
 
 options:
   skip_cve: false
-  pdf: false
-  simple: false
   workers: 20
 ```
 
@@ -154,10 +175,10 @@ sources:
       package_json: apps/frontend/package.json
       lockfile: apps/frontend/package-lock.json
       tags: [web, react]
+      include_dev: false
     - label: admin
       package_json: apps/admin/package.json
       lockfile: apps/admin/package-lock.json
-      tags: [internal]
   cargo:
     cargo_toml: services/api/Cargo.toml
     lockfile: services/api/Cargo.lock
@@ -174,7 +195,10 @@ Gradle projects with submodules are detected automatically. All subprojects (`:c
 sources:
   maven:
     gradle_dir: .
-    configuration: runtimeClasspath   # optional, default: runtimeClasspath
+    configurations:
+      - runtimeClasspath
+      - testRuntimeClasspath
+    include_subprojects: true
 ```
 
 ## Auto-Configurator
@@ -185,14 +209,15 @@ Instead of writing the config manually:
 sbom configure --project-dir /path/to/project
 ```
 
-With `rich` + `InquirerPy` installed, you get a fancy TUI with cursor navigation, status table, and options submenu. Without these dependencies, a simple text menu is used as fallback (`--simple` forces it).
+With `rich` + `InquirerPy` installed, you get a fancy TUI with cursor navigation, status table, ecosystem-specific options, and a global options submenu. Without these dependencies, a simple text menu is used as fallback (`--simple` forces it).
 
 Features:
 - Recursively scans, skips `node_modules`, `target`, `.venv` etc.
 - Suggests labels from directory names
 - Reads project name/version from manifest files
 - Loads existing config for editing
-- Options submenu: CVE scan, PDF, simple report, workers
+- Per-ecosystem options submenu (dev deps, Gradle configurations, etc.)
+- Global options: CVE scan, PDF, simple report, workers
 - `--non-interactive` accepts all defaults
 
 ## CLI Reference
@@ -227,7 +252,7 @@ sbom scan [--project-dir DIR] [--config FILE] [--output FILE] [--lang LANG]
 ### sbom report
 
 ```
-sbom report [--project-dir DIR] [--config FILE] [--sbom FILE] [--output FILE] [--skip-cve] [--pdf] [--simple] [--lang LANG]
+sbom report [--project-dir DIR] [--config FILE] [--sbom FILE] [--output FILE] [--format FMT] [--skip-cve] [--lang LANG]
 ```
 
 | Flag | Default | Description |
@@ -235,11 +260,16 @@ sbom report [--project-dir DIR] [--config FILE] [--sbom FILE] [--output FILE] [-
 | `--project-dir` | `.` | Project directory |
 | `--config` | `sbom.config.yaml` | Configuration file |
 | `--sbom` | from config or `sbom.cyclonedx.json` | Input SBOM |
-| `--output` | from config or `sbom-report.html` | Output path |
+| `--output` | from config or auto (based on format) | Output path |
+| `--format` | `html` | Output format: `html`, `simple-html`, `pdf`, `json`, `csv` |
 | `--skip-cve` | `false` | Skip CVE scanning |
-| `--pdf` | `false` | Additionally generate PDF (uses simple report) |
-| `--simple` | `false` | Simple report without tabs, search, and filters |
 | `--lang` | `en` | Language (`en`, `de`) |
+| `--simple` | | Alias for `--format simple-html` |
+| `--pdf` | | Alias for `--format pdf` |
+
+### sbom version
+
+Shows version and copyright.
 
 ## Library API
 
@@ -253,56 +283,46 @@ project = Path("../my-project")
 config = load_config(project / "sbom.config.yaml")
 sbom_path = project / "sbom.cyclonedx.json"
 
-# Generate SBOM
+# Scan dependencies
 generate_sbom(project, config, sbom_path)
 
-# Generate HTML report
+# Generate report (default: interactive HTML)
 generate_report(sbom_path, project / "sbom-report.html", skip_cve=True)
 ```
 
 ## Supported Ecosystems
 
-| Ecosystem | Lockfile | Registry | Detection |
+| Ecosystem | Lockfile | Registry | Options |
 |---|---|---|---|
-| npm | `package-lock.json` (v1/v2/v3), `yarn.lock` (v1) | npmjs.org | `package.json` + lockfile |
-| PyPI | `requirements.txt` (pip-compile or plain) | pypi.org | `requirements.txt` |
-| Dart/Flutter | `pubspec.lock` | pub.dev | `pubspec.yaml` + `pubspec.lock` |
-| Maven/Gradle | `build.gradle` / `build.gradle.kts` | Maven Central + Google Maven | `build.gradle` + `gradlew` |
-| Rust/Cargo | `Cargo.lock` | crates.io | `Cargo.toml` + `Cargo.lock` |
+| npm | `package-lock.json` (v1/v2/v3), `yarn.lock` (v1) | npmjs.org | `include_dev`, `include_optional` |
+| PyPI | `requirements.txt` (pip-compile or plain) | pypi.org | `dep_tree_method` |
+| Dart/Flutter | `pubspec.lock` | pub.dev | `include_dev` |
+| Maven/Gradle | `build.gradle` / `build.gradle.kts` | Maven Central + Google Maven | `configurations` (multi-select), `include_subprojects` |
+| Rust/Cargo | `Cargo.lock` | crates.io | `include_dev`, `include_build` |
 
-**PyPI notes:**
-- pip-compile format (with `# via` comments) — automatically detects direct vs. transitive
-- Plain `requirements.txt` — all packages as direct, transitive via `pipdeptree` (if installed)
+## Plugin Architecture
 
-**Maven/Gradle notes:**
-- Subprojects are automatically detected and scanned individually
-- Module membership (`:client`, `:server` etc.) shown as filter in the report
-- Also supports pre-computed `gradle-dependencies.json` (custom Gradle task)
+Three plugin registries, all following the same pattern: base class + registry + one file per plugin.
 
-## Adding a New Ecosystem
+### Adding a New Ecosystem
 
-Just one file + registry entry. **No changes to the report generator needed.**
+Just one file + registry entry. No changes to scanners, renderers, or the configurator needed.
 
-1. Create a new file, e.g. `src/sbom_scanner/ecosystems/composer.py`:
+1. Create `src/sbom_scanner/ecosystems/composer.py`:
 
 ```python
 from .base import Ecosystem
 
 class ComposerEcosystem(Ecosystem):
-    # Identification
     name = "composer"
     display_name = "PHP/Composer"
     cdx_prefix = "cdx:composer"
     purl_type = "composer"
-
-    # Report configuration
     package_url_template = "https://packagist.org/packages/{name}"
     dep_property = "cdx:composer:dependency"
     latest_property = "cdx:composer:latestVersion"
     dep_labels = {"direct main": "direct", "transitive": "transitive"}
-    has_group_column = False
 
-    # Auto-configurator pattern
     def scan_pattern(self):
         return {
             "detect_files": ["composer.lock"],
@@ -311,34 +331,21 @@ class ComposerEcosystem(Ecosystem):
             "icon": "🐘",
         }
 
-    # Required methods
+    def config_options(self):
+        return [
+            {"key": "include_dev", "label": "Include dev dependencies", "type": "bool", "default": True},
+        ]
+
     def detect(self, project_dir, config): ...
     def parse(self, project_dir, config): ...
     def fetch_latest_versions(self, packages, workers=20): ...
     def build_component(self, pkg, latest): ...
     def get_direct_purls(self, packages): ...
-
-    # Optional
-    def parse_dependency_graph(self, project_dir, config, packages):
-        return []
 ```
 
-2. Register in `src/sbom_scanner/ecosystems/__init__.py`:
+2. Register in `src/sbom_scanner/ecosystems/__init__.py`.
 
-```python
-from .composer import ComposerEcosystem
-
-REGISTRY: list = [
-    ...
-    ComposerEcosystem(),
-]
-```
-
-That's it. The report generator reads all properties from the class — tabs, filters, badges, tree work automatically. The auto-configurator discovers it via `scan_pattern()`.
-
-## Adding a New CVE Scanner
-
-Same architecture — one file + registry entry.
+### Adding a New CVE Scanner
 
 1. Create `src/sbom_scanner/scanners/trivy.py`:
 
@@ -357,10 +364,41 @@ class TrivyScanner(Scanner):
 
 **Built-in scanners:**
 
-| Scanner | Type | Targets | Description |
-|---|---|---|---|
-| grype | SBOM-based | `*` | Scans the CycloneDX SBOM |
-| osv | Lockfile-based | `*` | Scans lockfiles against the OSV database |
+| Scanner | Type | Targets |
+|---|---|---|
+| grype | SBOM-based | `*` |
+| osv | Lockfile-based | `*` |
+
+### Adding a New Report Renderer
+
+1. Create `src/sbom_scanner/renderers/markdown.py`:
+
+```python
+from .base import Renderer
+
+class MarkdownRenderer(Renderer):
+    name = "markdown"
+    display_name = "Markdown Report"
+    file_extension = ".md"
+
+    def render(self, sbom, vulns, output_path, **kwargs):
+        from ..report_data import classify_components, eco_stats, get_eco_config
+        # Build markdown output from sbom data
+        ...
+        return output_path
+```
+
+2. Register in `src/sbom_scanner/renderers/__init__.py`.
+
+**Built-in renderers:**
+
+| Renderer | Format | Description |
+|---|---|---|
+| `html` | Interactive HTML | Tabs, search, filters, dependency tree, dark mode |
+| `simple-html` | Flat HTML | No JavaScript, suitable for email/archiving |
+| `pdf` | PDF | Via weasyprint, Chrome headless, or wkhtmltopdf |
+| `json` | JSON | Structured data for automation |
+| `csv` | CSV | Flat table for spreadsheets |
 
 ## Project Structure
 
@@ -374,10 +412,12 @@ sbom-scanner/
 └── src/
     └── sbom_scanner/
         ├── __init__.py                 # Version + library API
+        ├── cli.py                      # Compound CLI: sbom <command>
         ├── i18n.py                     # Internationalization (gettext)
         ├── configure.py                # sbom configure (TUI + simple fallback)
         ├── generate_sbom.py            # sbom scan (ecosystem-agnostic)
-        ├── generate_sbom_report.py     # sbom report (ecosystem-agnostic)
+        ├── generate_sbom_report.py     # sbom report (orchestrator)
+        ├── report_data.py              # Shared data processing for renderers
         ├── ecosystems/
         │   ├── __init__.py             # Registry
         │   ├── base.py                 # Base class (Ecosystem)
@@ -391,13 +431,21 @@ sbom-scanner/
         │   ├── base.py                 # Base class (Scanner)
         │   ├── grype.py                # grype (SBOM-based)
         │   └── osv.py                  # osv-scanner (lockfile-based)
+        ├── renderers/
+        │   ├── __init__.py             # Registry
+        │   ├── base.py                 # Base class (Renderer)
+        │   ├── html.py                 # Interactive HTML report
+        │   ├── simple_html.py          # Simple flat HTML report
+        │   ├── pdf.py                  # PDF conversion
+        │   ├── json_report.py          # JSON output
+        │   └── csv_report.py           # CSV output
         └── locales/
             └── de/LC_MESSAGES/         # German translation (.po/.mo)
 ```
 
 ## CI/CD Integration
 
-GitLab CI example:
+### GitLab CI
 
 ```yaml
 sbom:
@@ -406,28 +454,34 @@ sbom:
     - pip install sbom-scanner[all]
     - sbom scan --project-dir .
     - sbom report --project-dir . --skip-cve
+    - sbom report --project-dir . --format json --output sbom-report.json --skip-cve
   artifacts:
     paths:
       - sbom.cyclonedx.json
       - sbom-report.html
+      - sbom-report.json
 ```
 
-With CVE scanning:
+### GitHub Actions
 
 ```yaml
-sbom:
-  stage: test
-  image: python:3.13
-  before_script:
-    - pip install sbom-scanner[all]
-    - curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
-  script:
-    - sbom scan --project-dir .
-    - sbom report --project-dir .
-  artifacts:
-    paths:
-      - sbom.cyclonedx.json
-      - sbom-report.html
+- name: SBOM Scan
+  run: |
+    pip install sbom-scanner[all]
+    sbom scan --project-dir .
+    sbom report --project-dir . --format html --skip-cve
+    sbom report --project-dir . --format json --skip-cve
+```
+
+### With CVE scanning
+
+```yaml
+before_script:
+  - pip install sbom-scanner[all]
+  - curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+script:
+  - sbom scan --project-dir .
+  - sbom report --project-dir .
 ```
 
 ## License
