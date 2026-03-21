@@ -171,7 +171,7 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
                     options: dict | None = None) -> str:
     """Generate YAML config as a string."""
     lines = [
-        _("# SBOM Report Generator — Configuration"),
+        _("# SBOM Scanner — Configuration"),
         _("# Generated for: {}").format(project_dir),
         "",
         "project:",
@@ -381,7 +381,7 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
         console.clear()
         console.print()
         console.print(Panel.fit(
-            f"[bold cyan]SBOM Report Generator[/] — Auto-Configurator\n"
+            f"[bold cyan]SBOM Scanner[/] — Auto-Configurator\n"
             f"[dim]{project_dir}[/]\n"
             f"[dim]© 2026 Frmwrk GmbH[/]",
             border_style="cyan",

@@ -91,8 +91,8 @@ msgid "# Generated for: {}"
 msgstr "# Generiert für: {}"
 
 #: configure.py:194
-msgid "# SBOM Report Generator — Configuration"
-msgstr "# SBOM Report Generator — Konfiguration"
+msgid "# SBOM Scanner — Configuration"
+msgstr "# SBOM Scanner — Konfiguration"
 
 #: configure.py:781
 msgid "Accept all defaults without prompting"

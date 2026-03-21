@@ -1,4 +1,4 @@
-"""SBOM Report Generator — Multi-ecosystem CycloneDX SBOM + HTML report.
+"""SBOM Scanner — Multi-ecosystem CycloneDX SBOM scanner + HTML report.
 
 Library usage:
 

@@ -1262,7 +1262,7 @@ def load_config(config_path: Path) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description=_("SBOM HTML/PDF Report Generator") + " | © 2026 Frmwrk GmbH")
+    parser = argparse.ArgumentParser(description=_("SBOM Scanner — HTML/PDF Report") + " | © 2026 Frmwrk GmbH")
     parser.add_argument("--sbom", help=_("Path to SBOM (default: from config or sbom.cyclonedx.json)"))
     parser.add_argument("--output", help=_("Output path (default: from config or sbom-report.html)"))
     parser.add_argument("--config", default="sbom.config.yaml", help=_("Configuration file"))
