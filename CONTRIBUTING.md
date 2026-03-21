@@ -16,7 +16,9 @@ Thank you for your interest in contributing! Here are the guidelines.
 3. Create a feature branch from `main`:
 
    ```bash
-   git checkout -b my-feature
+   git checkout -b feature/my-feature
+   # or
+   git checkout -b bugfix/my-bugfix
    ```
 
 ## Making Changes
