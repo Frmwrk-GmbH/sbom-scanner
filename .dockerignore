@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+*.egg-info
+dist
+build
+.git
+.github
+.idea
+.venv
+venv
+*.egg
+.eggs
+sbom.cyclonedx.json
+sbom-report.html
+sbom-report.pdf
+.env
+_version.py
