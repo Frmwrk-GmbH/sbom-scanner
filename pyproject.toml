@@ -35,6 +35,3 @@ version-file = "src/sbom_scanner/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sbom_scanner"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"src/sbom_scanner/locales" = "sbom_scanner/locales"
