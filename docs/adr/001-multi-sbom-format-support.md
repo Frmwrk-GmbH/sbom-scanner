@@ -1,7 +1,7 @@
 # ADR-001: Multi-SBOM-Format Support (CycloneDX + SPDX)
 
-**Status:** Deferred
-**Date:** 2026-03-22
+**Status:** Deferred  
+**Date:** 2026-03-22  
 **Context:** Feature request to support SPDX alongside CycloneDX
 
 ## Problem
