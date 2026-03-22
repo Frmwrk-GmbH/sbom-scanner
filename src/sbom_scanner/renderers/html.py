@@ -909,12 +909,24 @@ class HtmlRenderer(Renderer):
                 lic_counter[lic] += 1
                 lic_packages.setdefault(lic, []).append(c)
 
-            # Filter buttons (clickable badges)
+            # Filter buttons (clickable, color-coded)
+            from ..report_data import _PERMISSIVE, _COPYLEFT
+            def _lic_btn_class(name: str) -> str:
+                upper = name.upper().replace(" ", "-")
+                for p in _PERMISSIVE:
+                    if p.upper() in upper:
+                        return "ok"
+                for c in _COPYLEFT:
+                    if c.upper() in upper:
+                        return "warning"
+                return "neutral"
+
             html += '<div class="filter-bar no-print" id="license-filters">\n'
             html += f'    <button class="filter-btn active" data-lic-filter="all">All <span class="filter-count">{sum(lic_counter.values())}</span></button>\n'
             for lic_name, count in lic_counter.most_common():
                 lic_val = escape(lic_name)
-                html += f'    <button class="filter-btn" data-lic-filter="{lic_val}">{lic_val} <span class="filter-count">{count}</span></button>\n'
+                cls = _lic_btn_class(lic_name if lic_name != "Unknown" else "")
+                html += f'    <button class="filter-btn badge {cls}" data-lic-filter="{lic_val}">{lic_val} <span class="filter-count">{count}</span></button>\n'
             html += '</div>\n'
 
             # Table grouped by license

@@ -10,11 +10,25 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
+keywords = [
+    "sbom", "cyclonedx", "software-bill-of-materials",
+    "dependency-scanner", "vulnerability-scanner", "security",
+    "supply-chain-security", "license-compliance",
+    "npm", "yarn", "pypi", "python", "pip",
+    "cargo", "rust", "crates",
+    "gradle", "maven", "java", "kotlin", "android",
+    "nuget", "dotnet", "csharp",
+    "dart", "flutter", "pub",
+    "cve", "grype", "osv", "osv-scanner",
+    "html-report", "dependency-tree", "pdf-report",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Topic :: Security",
     "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: System :: Software Distribution",
 ]
 
 [project.optional-dependencies]

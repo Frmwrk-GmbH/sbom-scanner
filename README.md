@@ -4,14 +4,16 @@ A modular, multi-ecosystem SBOM scanner for software projects. Produces a [Cyclo
 
 ## Features
 
-- **Multi-ecosystem** — npm, yarn, PyPI, Dart/Flutter, Maven/Gradle, Rust/Cargo
+- **Multi-ecosystem** — npm, yarn, PyPI, Dart/Flutter, Maven/Gradle, Rust/Cargo, C#/NuGet
 - **Multiroot / Monorepo** — multiple lockfiles per ecosystem, with labels and tags
 - **Gradle subprojects** — automatic detection and scanning of all submodules
+- **C#/.NET solutions** — parses .sln files, discovers all .csproj subprojects, supports both modern PackageReference and legacy packages.config
 - **Ecosystem-specific options** — include/exclude dev deps, choose dependency tree method, select Gradle configurations
-- **Auto-detect** — discovers ecosystems automatically from lockfiles
-- **Auto-configurator** — recursively scans projects and generates config interactively (fancy TUI or simple text mode)
+- **Zero-config quickstart** — auto-detects ecosystems from lockfiles, no config file needed
+- **Interactive configuration wizard** — fancy TUI with cursor navigation, color-coded status table, per-ecosystem options, and live config preview (powered by [rich](https://github.com/Textualize/rich) + [InquirerPy](https://github.com/kazhala/InquirerPy)) — falls back to simple text menu without dependencies
 - **CVE scanning** — pluggable scanner architecture with [grype](https://github.com/anchore/grype) and [osv-scanner](https://github.com/google/osv-scanner) built in
-- **Latest-version check** — parallel lookups against npm, PyPI, crates.io, Maven Central, Google Maven
+- **License compliance** — fetches license info from package registries (npm, PyPI, Cargo), color-coded badges (permissive/copyleft/unknown), dedicated license overview tab with clickable filter buttons
+- **Latest-version check** — parallel lookups against npm, PyPI, crates.io, Maven Central, Google Maven, NuGet
 - **Multiple output formats** — HTML (interactive), simple HTML, PDF, JSON, CSV
 - **Dependency tree** — expandable, animated, outdated descendants bubble up, sub-tabs per ecosystem/module
 - **Fully modular** — three plugin registries: ecosystems, scanners, renderers — each extensible with one file + registry entry
@@ -292,13 +294,14 @@ generate_report(sbom_path, project / "sbom-report.html", skip_cve=True)
 
 ## Supported Ecosystems
 
-| Ecosystem | Lockfile | Registry | Options |
-|---|---|---|---|
-| npm | `package-lock.json` (v1/v2/v3), `yarn.lock` (v1) | npmjs.org | `include_dev`, `include_optional` |
-| PyPI | `requirements.txt` (pip-compile or plain) | pypi.org | `dep_tree_method` |
-| Dart/Flutter | `pubspec.lock` | pub.dev | `include_dev` |
-| Maven/Gradle | `build.gradle` / `build.gradle.kts` | Maven Central + Google Maven | `configurations` (multi-select), `include_subprojects` |
-| Rust/Cargo | `Cargo.lock` | crates.io | `include_dev`, `include_build` |
+| Ecosystem | Lockfile | Registry | Options | Licenses |
+|---|---|---|---|---|
+| npm | `package-lock.json` (v1/v2/v3), `yarn.lock` (v1) | npmjs.org | `include_dev`, `include_optional` | Yes |
+| PyPI | `requirements.txt` (pip-compile or plain) | pypi.org | `dep_tree_method` | Yes |
+| Dart/Flutter | `pubspec.lock` | pub.dev | `include_dev` | — |
+| Maven/Gradle | `build.gradle` / `build.gradle.kts` | Maven Central + Google Maven | `configurations` (multi-select), `include_subprojects` | — |
+| Rust/Cargo | `Cargo.lock` | crates.io | `include_dev`, `include_build` | Yes |
+| C#/NuGet | `.sln` + `.csproj`, `packages.config` | nuget.org | `include_dev`, `include_transitive` | — |
 
 ## Plugin Architecture
 
