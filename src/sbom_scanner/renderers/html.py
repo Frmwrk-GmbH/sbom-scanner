@@ -432,6 +432,26 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         updateMatchCount(panel);
     });
 });
+
+/* License filter buttons */
+document.querySelectorAll('[data-lic-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const bar = btn.closest('.filter-bar');
+        bar.querySelectorAll('[data-lic-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.licFilter;
+        const panel = btn.closest('.tab-panel');
+        if (!panel) return;
+        panel.querySelectorAll('tbody tr').forEach(row => {
+            if (filter === 'all') {
+                row.style.display = '';
+            } else {
+                row.style.display = row.dataset.license === filter ? '' : 'none';
+            }
+        });
+        updateMatchCount(panel);
+    });
+});
 """
 
 
@@ -889,11 +909,12 @@ class HtmlRenderer(Renderer):
                 lic_counter[lic] += 1
                 lic_packages.setdefault(lic, []).append(c)
 
-            # Summary badges
-            html += '<div style="margin: 1rem 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">\n'
+            # Filter buttons (clickable badges)
+            html += '<div class="filter-bar no-print" id="license-filters">\n'
+            html += f'    <button class="filter-btn active" data-lic-filter="all">All <span class="filter-count">{sum(lic_counter.values())}</span></button>\n'
             for lic_name, count in lic_counter.most_common():
-                badge = license_badge(lic_name if lic_name != "Unknown" else "")
-                html += f'  {badge} <span class="dep-type">({count})</span>\n'
+                lic_val = escape(lic_name)
+                html += f'    <button class="filter-btn" data-lic-filter="{lic_val}">{lic_val} <span class="filter-count">{count}</span></button>\n'
             html += '</div>\n'
 
             # Table grouped by license
@@ -912,7 +933,7 @@ class HtmlRenderer(Renderer):
                         name_html = escape(name)
                     badge = license_badge(lic_name if lic_name != "Unknown" else "")
                     eco_display = eco_cfg.get("display_name", eco)
-                    html += f'<tr><td>{badge}</td><td>{name_html}</td><td>{escape(c["version"])}</td><td>{escape(eco_display)}</td></tr>\n'
+                    html += f'<tr data-license="{escape(lic_name)}"><td>{badge}</td><td>{name_html}</td><td>{escape(c["version"])}</td><td>{escape(eco_display)}</td></tr>\n'
             html += '</tbody></table>\n'
             html += '</div>\n'
 
