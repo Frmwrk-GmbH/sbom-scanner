@@ -1,7 +1,7 @@
 # ADR-001: Multi-SBOM-Format Support (CycloneDX + SPDX)
 
-**Status:** Proposed  
-**Date:** 2026-03-22  
+**Status:** Deferred
+**Date:** 2026-03-22
 **Context:** Feature request to support SPDX alongside CycloneDX
 
 ## Problem
@@ -81,14 +81,16 @@ Add `build_component_generic()` to base class. Existing `build_component()` beco
 
 ## Decision
 
-**Recommended: Option B** (post-processing converter) for initial SPDX support.
+**Deferred.** No SPDX support for now.
 
 Rationale:
-- Zero impact on existing ecosystem plugins — critical since external contributors may add ecosystems
-- The report layer always consumes CycloneDX internally — renderers don't need to change
-- SPDX output is achievable with a single converter function
-- Libraries like `cyclonedx-python-lib` or manual mapping can handle conversion
-- If SPDX becomes a first-class requirement later, Option A can be implemented as a follow-up
+- No concrete demand for SPDX output at this time
+- Option A (formatter layer) is too high-effort and high-risk for a speculative feature
+- Option B (converter) is viable but still unnecessary work without a real use case
+- CycloneDX 1.6 is well-supported by industry tools and meets current compliance needs
+
+**Revisit when:** A concrete requirement for SPDX output arises (e.g. customer/regulatory demand).
+**Preferred approach if revisited:** Option B (post-processing converter) — lowest effort, zero ecosystem impact.
 
 ## Option B: Implications of CycloneDX-as-internal + SPDX converter
 
