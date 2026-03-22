@@ -10,7 +10,7 @@ from ..report_data import (
     get_report_config, classify_components, eco_stats, get_eco_config,
     build_dep_lookup, count_outdated_deep, is_outdated, severity_order,
     get_prop, version_distance, purl_to_name, tags_html, diff_badge, status_badge,
-    render_tree_node,
+    render_tree_node, get_license, license_badge,
 )
 from .base import Renderer
 
@@ -542,6 +542,12 @@ class HtmlRenderer(Renderer):
         if has_tree:
             tab_ids.append(("tree", _("Dependency Tree"), len(dep_lookup)))
 
+        # License tab (only if any component has license data)
+        has_any_licenses = any(c.get("licenses") for c in components)
+        if has_any_licenses:
+            lic_count = sum(1 for c in components if get_license(c))
+            tab_ids.append(("licenses", "Licenses", lic_count))
+
         html += '<div class="tabs no-print">\n'
         for i, (tid, label, count) in enumerate(tab_ids):
             active = " active" if i == 0 else ""
@@ -630,6 +636,8 @@ class HtmlRenderer(Renderer):
                     html += f'    <button class="filter-btn" data-module="{escape(mod)}">{escape(mod)} <span class="filter-count">{count}</span></button>\n'
             html += '</div>\n'
 
+            has_licenses = any(c.get("licenses") for c in eco_components)
+
             # ── Outdated Packages ──
             html += f'<h2 id="outdated-{eco_name}" class="filterable" data-section="outdated">Outdated {display} packages ({len(outdated)})</h2>\n'
             if outdated:
@@ -646,6 +654,8 @@ class HtmlRenderer(Renderer):
                     headers += "<th>Upgradable</th>"
 
                 headers += "<th>Latest</th><th>Diff</th>"
+                if has_licenses:
+                    headers += "<th>License</th>"
 
                 html += f"<table><thead><tr>{headers}</tr></thead><tbody>\n"
                 for c in outdated:
@@ -677,6 +687,9 @@ class HtmlRenderer(Renderer):
                         row += f"<td>{escape(upgradable)}</td>"
 
                     row += f'<td class="version-new">{escape(latest)}</td><td>{diff_bdg}</td>'
+                    if has_licenses:
+                        lic = get_license(c)
+                        row += f"<td>{license_badge(lic)}</td>"
 
                     attrs = ""
                     if dep_prop:
@@ -698,7 +711,6 @@ class HtmlRenderer(Renderer):
                 headers = "<th>Group</th><th>Artifact</th>"
             if dep_prop:
                 headers += "<th>Typ</th>"
-            has_licenses = any(c.get("licenses") for c in eco_components)
             headers += "<th>Version</th><th>Latest</th><th>Status</th>"
             if has_licenses:
                 headers += "<th>License</th>"
@@ -743,7 +755,6 @@ class HtmlRenderer(Renderer):
 
                 row += f"<td>{escape(version)}</td><td>{escape(latest_display)}</td><td>{status}</td>"
                 if has_licenses:
-                    from ..report_data import get_license, license_badge
                     lic = get_license(c)
                     row += f"<td>{license_badge(lic)}</td>"
 
@@ -859,6 +870,50 @@ class HtmlRenderer(Renderer):
                 if use_subtabs:
                     html += '</div>\n'
 
+            html += '</div>\n'
+
+        # ── License overview tab ──
+        if has_any_licenses:
+            html += '<div class="tab-panel" id="tab-licenses" data-tab-title="Licenses">\n'
+            html += '<h2>Licenses</h2>\n'
+            html += '<input type="text" class="search-input" placeholder="Search licenses..." onkeyup="filterTable(this)">\n'
+
+            # Group components by license
+            from collections import Counter
+            lic_counter: Counter[str] = Counter()
+            lic_packages: dict[str, list[dict]] = {}
+            for c in components:
+                lic = get_license(c)
+                if not lic:
+                    lic = "Unknown"
+                lic_counter[lic] += 1
+                lic_packages.setdefault(lic, []).append(c)
+
+            # Summary badges
+            html += '<div style="margin: 1rem 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">\n'
+            for lic_name, count in lic_counter.most_common():
+                badge = license_badge(lic_name if lic_name != "Unknown" else "")
+                html += f'  {badge} <span class="dep-type">({count})</span>\n'
+            html += '</div>\n'
+
+            # Table grouped by license
+            html += '<table><thead><tr><th>License</th><th>Package</th><th>Version</th><th>Ecosystem</th></tr></thead><tbody>\n'
+            for lic_name, count in lic_counter.most_common():
+                for c in sorted(lic_packages[lic_name], key=lambda x: x["name"]):
+                    eco = get_prop(c, "cdx:ecosystem") or ""
+                    eco_cfg = get_report_config().get(eco, {})
+                    url_template = eco_cfg.get("url_template", "")
+                    name = c["name"]
+                    group = c.get("group", "")
+                    if url_template:
+                        url = url_template.format(name=name, group=group)
+                        name_html = f'<a href="{url}" target="_blank">{escape(name)}</a>'
+                    else:
+                        name_html = escape(name)
+                    badge = license_badge(lic_name if lic_name != "Unknown" else "")
+                    eco_display = eco_cfg.get("display_name", eco)
+                    html += f'<tr><td>{badge}</td><td>{name_html}</td><td>{escape(c["version"])}</td><td>{escape(eco_display)}</td></tr>\n'
+            html += '</tbody></table>\n'
             html += '</div>\n'
 
         # ── Footer ──
