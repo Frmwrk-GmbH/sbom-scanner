@@ -43,8 +43,17 @@ formatters/
 ```
 
 - **Pros:** Clean architecture, SPDX as first-class citizen
-- **Cons:** ~12 files affected, `build_component()` signature change in all ecosystems
-- **Effort:** Large
+- **Cons:** High impact across the entire codebase:
+  - All 6 ecosystem `build_component()` methods must change return format
+  - `report_data.py` must be rewritten to support a generic component model
+  - All 5 renderers depend on `report_data.py` and need adaptation
+  - `generate_sbom.py` BOM assembly completely rewritten
+  - Existing tests break and must be rewritten
+  - External ecosystem plugins (by contributors) would also break
+  - Risk of regressions across all output formats and the dependency tree
+- **Effort:** Very high — estimated 2-3 days of focused refactoring + testing
+- **When warranted:** Only if SPDX needs to be a first-class internal format
+  (e.g. reading external SPDX SBOMs, SPDX-native report rendering)
 
 ### Option B: Post-processing converter (pragmatic, low effort)
 
