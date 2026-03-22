@@ -218,6 +218,38 @@ def tags_html(component: dict) -> str:
     return " " + " ".join(f'<span class="tag">{escape(t)}</span>' for t in tags)
 
 
+def get_license(component: dict) -> str:
+    """Extract license from a CycloneDX component (licenses field or property)."""
+    licenses = component.get("licenses", [])
+    if licenses:
+        lic = licenses[0].get("license", {})
+        return lic.get("id", "") or lic.get("name", "")
+    return ""
+
+
+# Permissive licenses (green badge)
+_PERMISSIVE = {"MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "Unlicense", "0BSD", "CC0-1.0"}
+# Copyleft licenses (yellow badge)
+_COPYLEFT = {"GPL-2.0", "GPL-3.0", "LGPL-2.1", "LGPL-3.0", "AGPL-3.0", "MPL-2.0",
+             "GPL-2.0-only", "GPL-3.0-only", "GPL-2.0-or-later", "GPL-3.0-or-later",
+             "LGPL-2.1-only", "LGPL-3.0-only", "AGPL-3.0-only"}
+
+
+def license_badge(lic: str) -> str:
+    """Return a colored badge for a license identifier."""
+    if not lic:
+        return '<span class="badge neutral">unknown</span>'
+    # Normalize for lookup
+    lic_upper = lic.upper().replace(" ", "-")
+    for p in _PERMISSIVE:
+        if p.upper() in lic_upper:
+            return f'<span class="badge ok">{escape(lic)}</span>'
+    for c in _COPYLEFT:
+        if c.upper() in lic_upper:
+            return f'<span class="badge warning">{escape(lic)}</span>'
+    return f'<span class="badge neutral">{escape(lic)}</span>'
+
+
 def diff_badge(major_diff: int) -> str:
     if major_diff >= 2:
         return f'<span class="badge critical">{major_diff} Major</span>'

@@ -224,7 +224,10 @@ class SimpleHtmlRenderer(Renderer):
                 headers = "<th>Group</th><th>Artifact</th>"
             if dep_prop:
                 headers += "<th>Typ</th>"
+            has_licenses = any(c.get("licenses") for c in eco_components)
             headers += "<th>Version</th><th>Latest</th><th>Status</th>"
+            if has_licenses:
+                headers += "<th>License</th>"
 
             html += f"<table><thead><tr>{headers}</tr></thead><tbody>\n"
 
@@ -265,6 +268,10 @@ class SimpleHtmlRenderer(Renderer):
                     row += f"<td><span class='dep-type'>{escape(dep_short)}</span></td>"
 
                 row += f"<td>{escape(version)}</td><td>{escape(latest_display)}</td><td>{status}</td>"
+                if has_licenses:
+                    from ..report_data import get_license, license_badge
+                    lic = get_license(c)
+                    row += f"<td>{license_badge(lic)}</td>"
                 html += f"<tr>{row}</tr>\n"
             html += "</tbody></table>\n"
 
