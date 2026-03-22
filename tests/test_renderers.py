@@ -131,7 +131,7 @@ class TestCsvRenderer:
         with open(output) as f:
             reader = csv.reader(f)
             rows = list(reader)
-        assert rows[0] == ["Ecosystem", "Group", "Name", "Version", "Latest", "Type", "Status"]
+        assert rows[0] == ["Ecosystem", "Group", "Name", "Version", "Latest", "Type", "Status", "License"]
         assert len(rows) == 4  # header + 3 components
 
     def test_status_values(self, minimal_sbom, tmp_path):

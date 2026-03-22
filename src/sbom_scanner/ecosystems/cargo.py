@@ -12,6 +12,8 @@ from urllib.request import Request, urlopen
 
 from .base import Ecosystem
 
+_cargo_license_cache: dict[str, str] = {}
+
 
 class CargoEcosystem(Ecosystem):
     name = "cargo"
@@ -27,6 +29,7 @@ class CargoEcosystem(Ecosystem):
     }
     has_group_column = False
     purl_type = "cargo"
+    license_property = "cdx:cargo:license"
 
     def scan_pattern(self) -> dict | None:
         return {
@@ -293,6 +296,10 @@ class CargoEcosystem(Ecosystem):
 
         return result
 
+    def fetch_licenses(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
+        # Licenses are populated as a side-effect of _fetch_latest() during fetch_latest_versions()
+        return dict(_cargo_license_cache)
+
     @staticmethod
     def _fetch_latest(name: str) -> str | None:
         """Fetch the latest version from crates.io."""
@@ -305,6 +312,10 @@ class CargoEcosystem(Ecosystem):
             with urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read())
                 crate = data.get("crate", {})
+                # Cache license for later
+                lic = crate.get("license", "")
+                if lic and isinstance(lic, str):
+                    _cargo_license_cache[name] = lic
                 return crate.get("max_stable_version") or crate.get("max_version")
         except (URLError, json.JSONDecodeError, TimeoutError):
             pass

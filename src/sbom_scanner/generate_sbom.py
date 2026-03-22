@@ -107,6 +107,13 @@ def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
         print(_("Loading latest versions for {} packages ...").format(len(packages)))
         latest_versions = eco.fetch_latest_versions(packages, workers)
 
+        # Fetch licenses if enabled
+        fetch_licenses = options.get("fetch_licenses", False)
+        licenses: dict[str, str] = {}
+        if fetch_licenses:
+            print(_("Fetching licenses for {} packages ...").format(len(packages)))
+            licenses = eco.fetch_licenses(packages, workers)
+
         # Tags from config + label + ecosystem name
         tags = list(eco_config.get("tags", []))
         if label:
@@ -118,6 +125,10 @@ def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
             key = eco.package_key(pkg)
             latest = latest_versions.get(key)
             component = eco.build_component(pkg, latest)
+            # Add license if available
+            lic = licenses.get(key, "")
+            if lic:
+                component["licenses"] = [{"license": {"id": lic}}]
             # CycloneDX 1.6 tags (for multiroot filtering in the report)
             if tags:
                 component["tags"] = tags
@@ -200,6 +211,7 @@ def main():
     parser = argparse.ArgumentParser(description=_("Generic CycloneDX SBOM generator") + " | © 2026 Frmwrk GmbH")
     parser.add_argument("--config", default="sbom.config.yaml", help=_("Configuration file (default: sbom.config.yaml)"))
     parser.add_argument("--project-dir", default=".", help=_("Project directory (default: current directory)"))
+    parser.add_argument("--licenses", action="store_true", help=_("Fetch and include license information"))
     parser.add_argument("--lang", default=None, help="Language (en, de)")
     parser.add_argument("--output", help=_("Output path (overrides config)"))
     args = parser.parse_args()
@@ -216,6 +228,10 @@ def main():
     output_path = Path(args.output or output_config.get("sbom", "sbom.cyclonedx.json"))
     if not output_path.is_absolute():
         output_path = project_dir / output_path
+
+    # Merge CLI flags into config options
+    if args.licenses:
+        config.setdefault("options", {})["fetch_licenses"] = True
 
     generate_sbom(project_dir, config, output_path)
 

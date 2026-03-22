@@ -14,6 +14,8 @@ from urllib.request import Request, urlopen
 from .base import Ecosystem
 from ..i18n import _
 
+_pypi_license_cache: dict[str, str] = {}
+
 
 def _normalize_pkg_name(name: str) -> str:
     """Normalize package names per PEP 503."""
@@ -33,6 +35,7 @@ class PypiEcosystem(Ecosystem):
     }
     has_group_column = False
     purl_type = "pypi"
+    license_property = "cdx:pypi:license"
 
     def scan_pattern(self) -> dict | None:
         return {
@@ -289,6 +292,10 @@ class PypiEcosystem(Ecosystem):
             for ref, deps in graph.items()
         ]
 
+    def fetch_licenses(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
+        # Licenses are populated as a side-effect of _fetch_latest() during fetch_latest_versions()
+        return dict(_pypi_license_cache)
+
     @staticmethod
     def _fetch_latest(name: str) -> str | None:
         url = f"https://pypi.org/pypi/{name}/json"
@@ -296,6 +303,10 @@ class PypiEcosystem(Ecosystem):
         try:
             with urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read())
+                # Cache license for later
+                lic = data.get("info", {}).get("license", "")
+                if lic and isinstance(lic, str):
+                    _pypi_license_cache[name] = lic
                 return data.get("info", {}).get("version")
         except (URLError, json.JSONDecodeError, TimeoutError):
             pass

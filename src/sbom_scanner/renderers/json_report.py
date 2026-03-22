@@ -34,10 +34,15 @@ class JsonRenderer(Renderer):
                 "total": stats["total"],
                 "outdated": len(stats["outdated"]),
                 "packages": [
-                    {"name": c["name"], "version": c["version"],
-                     "group": c.get("group", ""),
-                     "latest": get_prop(c, cfg.get("latest_prop", "")) or None,
-                     "dep_type": get_prop(c, cfg.get("dep_prop", "")) or None}
+                    {
+                        "name": c["name"], "version": c["version"],
+                        "group": c.get("group", ""),
+                        "latest": get_prop(c, cfg.get("latest_prop", "")) or None,
+                        "dep_type": get_prop(c, cfg.get("dep_prop", "")) or None,
+                        "license": (c.get("licenses", [{}])[0].get("license", {}).get("id", "")
+                                    or c.get("licenses", [{}])[0].get("license", {}).get("name", "")
+                                    or get_prop(c, cfg.get("license_prop", "")) or None),
+                    }
                     for c in eco_comps
                 ],
             }

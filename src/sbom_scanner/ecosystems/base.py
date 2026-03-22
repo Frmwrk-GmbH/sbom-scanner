@@ -30,6 +30,7 @@ class Ecosystem(ABC):
     extra_properties: dict[str, str] = {}
     purl_type: str = ""
     module_property: str = ""
+    license_property: str = ""  # e.g. "cdx:npm:license"
 
     def report_config(self) -> dict:
         """Return report configuration as a dict.
@@ -46,7 +47,15 @@ class Ecosystem(ABC):
             "extra_props": self.extra_properties,
             "purl_type": self.purl_type,
             "module_prop": self.module_property,
+            "license_prop": self.license_property,
         }
+
+    def fetch_licenses(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
+        """Fetch license info for packages. Override in ecosystems that support it.
+
+        Returns: {package_name: license_id}
+        """
+        return {}
 
     # ── Abstract methods ──
 

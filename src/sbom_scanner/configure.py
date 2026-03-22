@@ -228,7 +228,7 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
                     _write_eco_options(lines, item, "      ")
 
     # Options (only non-default values)
-    defaults = {"skip_cve": False, "pdf": False, "simple": False, "workers": 20}
+    defaults = {"skip_cve": False, "fetch_licenses": False, "pdf": False, "simple": False, "workers": 20}
     if options:
         non_default = {k: v for k, v in options.items() if v != defaults.get(k)}
         if non_default:
@@ -440,6 +440,8 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
         opts_summary = []
         if options["skip_cve"]:
             opts_summary.append(_("CVE off"))
+        if options["fetch_licenses"]:
+            opts_summary.append(_("Licenses"))
         if options["pdf"]:
             opts_summary.append("PDF")
         if options["simple"]:
@@ -488,6 +490,7 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
                 console.print()
                 opt_choices = [
                     {"name": _("  CVE scan:       {}").format(_('Off') if options['skip_cve'] else _('On')), "value": "skip_cve"},
+                    {"name": _("  Fetch licenses: {}").format(_('Yes') if options['fetch_licenses'] else _('No')), "value": "fetch_licenses"},
                     {"name": _("  Generate PDF:   {}").format(_('Yes') if options['pdf'] else _('No')), "value": "pdf"},
                     {"name": _("  Simple report:  {}").format(_('Yes') if options['simple'] else _('No')), "value": "simple"},
                     {"name": _("  Workers:        {}").format(options['workers']), "value": "workers"},
@@ -716,7 +719,7 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
     name = default_name
     version = default_version
 
-    options = {"skip_cve": False, "pdf": False, "simple": False, "workers": 20}
+    options = {"skip_cve": False, "fetch_licenses": False, "pdf": False, "simple": False, "workers": 20}
 
     # Load existing config
     if output_path.exists():
@@ -755,6 +758,8 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
         opts_parts = []
         if options["skip_cve"]:
             opts_parts.append(_("CVE off"))
+        if options["fetch_licenses"]:
+            opts_parts.append(_("Licenses"))
         if options["pdf"]:
             opts_parts.append("PDF")
         if options["simple"]:
@@ -781,20 +786,23 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
             while True:
                 print("\n  " + _("Options:"))
                 print(_("    1. CVE scan:       {}").format(_('Off') if options['skip_cve'] else _('On')))
-                print(_("    2. Generate PDF:   {}").format(_('Yes') if options['pdf'] else _('No')))
-                print(_("    3. Simple report:  {}").format(_('Yes') if options['simple'] else _('No')))
-                print(_("    4. Workers:        {}").format(options['workers']))
+                print(_("    2. Fetch licenses: {}").format(_('Yes') if options['fetch_licenses'] else _('No')))
+                print(_("    3. Generate PDF:   {}").format(_('Yes') if options['pdf'] else _('No')))
+                print(_("    4. Simple report:  {}").format(_('Yes') if options['simple'] else _('No')))
+                print(_("    5. Workers:        {}").format(options['workers']))
                 print("    B. " + _("Back"))
-                opt = input(_("  Selection [1-4/B]: ")).strip().lower()
+                opt = input(_("  Selection [1-5/B]: ")).strip().lower()
                 if opt == "b" or opt == "z" or opt == "":
                     break
                 elif opt == "1":
                     options["skip_cve"] = not options["skip_cve"]
                 elif opt == "2":
-                    options["pdf"] = not options["pdf"]
+                    options["fetch_licenses"] = not options["fetch_licenses"]
                 elif opt == "3":
-                    options["simple"] = not options["simple"]
+                    options["pdf"] = not options["pdf"]
                 elif opt == "4":
+                    options["simple"] = not options["simple"]
+                elif opt == "5":
                     val = _prompt_str("  " + _("Workers"), str(options["workers"]))
                     try:
                         options["workers"] = int(val)

@@ -13,6 +13,8 @@ from urllib.request import Request, urlopen
 from .base import Ecosystem
 from ..i18n import _
 
+_npm_license_cache: dict[str, str] = {}
+
 
 class NpmEcosystem(Ecosystem):
     name = "npm"
@@ -29,6 +31,7 @@ class NpmEcosystem(Ecosystem):
     }
     has_group_column = False
     purl_type = "npm"
+    license_property = "cdx:npm:license"
 
     def scan_pattern(self) -> dict | None:
         return {
@@ -432,6 +435,10 @@ class NpmEcosystem(Ecosystem):
 
     # ── npm Registry ──
 
+    def fetch_licenses(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
+        # Licenses are populated as a side-effect of _fetch_latest() during fetch_latest_versions()
+        return dict(_npm_license_cache)
+
     @staticmethod
     def _fetch_latest(name: str, retries: int = 3) -> str | None:
         url = f"https://registry.npmjs.org/{name}/latest"
@@ -440,6 +447,10 @@ class NpmEcosystem(Ecosystem):
             try:
                 with urlopen(req, timeout=10) as resp:
                     data = json.loads(resp.read())
+                    # Cache license for later
+                    lic = data.get("license", "")
+                    if lic and isinstance(lic, str):
+                        _npm_license_cache[name] = lic
                     return data.get("version")
             except HTTPError as e:
                 if e.code == 429 and attempt < retries - 1:
