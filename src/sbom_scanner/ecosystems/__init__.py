@@ -8,6 +8,7 @@ To register a new ecosystem:
 from .cargo import CargoEcosystem
 from .maven import MavenEcosystem
 from .npm import NpmEcosystem
+from .nuget import NugetEcosystem
 from .pub import PubEcosystem
 from .pypi import PypiEcosystem
 
@@ -18,6 +19,7 @@ REGISTRY: list = [
     PubEcosystem(),
     MavenEcosystem(),
     CargoEcosystem(),
+    NugetEcosystem(),
 ]
 
 

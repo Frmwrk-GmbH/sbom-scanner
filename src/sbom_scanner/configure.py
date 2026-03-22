@@ -126,13 +126,21 @@ def scan_project(project_dir: Path) -> list[dict]:
 
 
 def _walk_find(root: Path, filename: str):
-    """Recursive search, skips well-known directories."""
+    """Recursive search, skips well-known directories.
+
+    Supports exact match ("package.json") and suffix match ("*.sln").
+    """
+    is_glob = filename.startswith("*.")
+    suffix = filename[1:] if is_glob else None  # e.g. ".sln"
     try:
         for item in sorted(root.iterdir()):
             if item.is_dir():
                 if item.name in SKIP_DIRS:
                     continue
                 yield from _walk_find(item, filename)
+            elif is_glob:
+                if item.name.endswith(suffix):
+                    yield item
             elif item.name == filename:
                 yield item
     except PermissionError:
