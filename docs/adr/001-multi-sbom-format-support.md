@@ -81,6 +81,30 @@ Rationale:
 - Libraries like `cyclonedx-python-lib` or manual mapping can handle conversion
 - If SPDX becomes a first-class requirement later, Option A can be implemented as a follow-up
 
+## Option B: Implications of CycloneDX-as-internal + SPDX converter
+
+### Works well for
+- Compliance requirements that mandate SPDX output (deliver the converted file)
+- CI/CD pipelines that expect SPDX as input
+- Toolchains that only read SPDX (e.g. legal/procurement tools)
+
+### Limitations
+- **SPDX properties lost** — CycloneDX has `properties[{name,value}]`, SPDX has no equivalent.
+  All `cdx:*` metadata (dep_type, module, latest version) cannot be transferred 1:1.
+- **Relationship types flattened** — SPDX has richer relationship types
+  (`DEPENDS_ON`, `BUILD_DEPENDENCY_OF`, `DEV_DEPENDENCY_OF`, `OPTIONAL_DEPENDENCY_OF`).
+  A conversion from CycloneDX flattens everything to `DEPENDS_ON` because CycloneDX only
+  distinguishes dependency types via properties.
+- **License expressions** — SPDX uses SPDX expressions (`MIT AND Apache-2.0`),
+  CycloneDX uses a list. Conversion is possible but not lossless for complex dual-license scenarios.
+- **No roundtrip** — CycloneDX → SPDX → CycloneDX loses information.
+- **Report layer untouched** — Reports always read CycloneDX internally, regardless of export format.
+  SPDX SBOMs from other tools cannot be used as input for `sbom report`.
+
+### Conclusion
+- **For output:** Conversion is sufficient.
+- **For input (reading external SBOMs):** Option A (formatter layer) would be needed.
+
 ## Implementation (when needed)
 
 1. Add `--sbom-format cyclonedx|spdx` flag to `sbom scan`
