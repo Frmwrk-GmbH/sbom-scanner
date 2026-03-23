@@ -195,18 +195,31 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
     for item in selected:
         by_eco.setdefault(item["ecosystem"], []).append(item)
 
+    def _can_skip(item: dict) -> bool:
+        """Check if an item uses all defaults and has no custom options."""
+        if not _is_default_config(item):
+            return False
+        if item.get("label") or item.get("tags"):
+            return False
+        # Check for non-default ecosystem options
+        eco_opts = item.get("eco_options", {})
+        if eco_opts:
+            eco_options = _get_eco_options(item["ecosystem"])
+            defaults = {o["key"]: o["default"] for o in eco_options}
+            if any(v != defaults.get(k) for k, v in eco_opts.items()):
+                return False
+        return True
+
     has_sources = False
     for eco, items in by_eco.items():
-        all_default = all(_is_default_config(item) for item in items)
-        if all_default and len(items) == 1:
+        if all(_can_skip(item) for item in items) and len(items) == 1:
             continue
         has_sources = True
 
     if has_sources:
         lines.append("sources:")
         for eco, items in by_eco.items():
-            all_default = all(_is_default_config(item) for item in items)
-            if all_default and len(items) == 1:
+            if all(_can_skip(item) for item in items) and len(items) == 1:
                 continue
 
             lines.append(f"  {eco}:")
