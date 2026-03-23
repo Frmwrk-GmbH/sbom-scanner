@@ -228,6 +228,39 @@ class PubEcosystem(Ecosystem):
             for p in packages if p["dep_type"] in ("direct main", "direct dev")
         ]
 
+    def parse_dependency_graph(self, project_dir: Path, config: dict, packages: list[dict]) -> list[dict]:
+        """Build dependency graph from `dart pub deps --json`."""
+        try:
+            result = subprocess.run(
+                ["dart", "pub", "deps", "--json"],
+                capture_output=True, text=True, cwd=project_dir, timeout=120,
+            )
+            if result.returncode != 0:
+                return []
+            data = json.loads(result.stdout)
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+            return []
+
+        known = {p["name"]: p["version"] for p in packages}
+        graph = []
+
+        for pkg in data.get("packages", []):
+            name = pkg.get("name", "")
+            if name not in known or pkg.get("kind") == "root":
+                continue
+            version = known[name]
+            ref = f"pkg:pub/{name}@{version}"
+            deps = pkg.get("dependencies", [])
+            depends_on = []
+            for dep_name in deps:
+                dep_ver = known.get(dep_name)
+                if dep_ver:
+                    depends_on.append(f"pkg:pub/{dep_name}@{dep_ver}")
+            if depends_on:
+                graph.append({"ref": ref, "dependsOn": sorted(depends_on)})
+
+        return graph
+
     def get_osv_lockfiles(self, project_dir: Path, config: dict) -> list[tuple[str, Path]]:
         lock = project_dir / config.get("pubspec_lock", "pubspec.lock")
         if lock.exists():
