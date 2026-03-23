@@ -26,6 +26,7 @@ class PubEcosystem(Ecosystem):
     }
     has_group_column = False
     purl_type = "pub"
+    license_property = "cdx:pub:license"
     extra_properties = {
         "upgradable": "cdx:pub:upgradableVersion",
         "discontinued": "cdx:pub:discontinued",
@@ -62,6 +63,37 @@ class PubEcosystem(Ecosystem):
             return (name, version) if name else None
         except Exception:
             return None
+
+    def fetch_licenses(self, packages: list[dict], workers: int = 20) -> dict[str, str]:
+        """Fetch licenses from pub.dev score API tags."""
+        from urllib.error import URLError
+        from urllib.request import Request, urlopen
+
+        results: dict[str, str] = {}
+        unique = {p["name"]: p for p in packages}
+
+        def lookup(name: str) -> tuple[str, str]:
+            url = f"https://pub.dev/api/packages/{name}/score"
+            req = Request(url, headers={"Accept": "application/json"})
+            try:
+                with urlopen(req, timeout=10) as resp:
+                    data = json.loads(resp.read())
+                    tags = data.get("tags", [])
+                    for tag in tags:
+                        if tag.startswith("license:") and tag not in ("license:fsf-libre", "license:osi-approved"):
+                            return name, tag.split(":", 1)[1].upper()
+            except (URLError, json.JSONDecodeError, TimeoutError):
+                pass
+            return name, ""
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(lookup, name): name for name in unique}
+            for future in as_completed(futures):
+                name, lic = future.result()
+                if lic:
+                    results[name] = lic
+
+        return results
 
     def detect(self, project_dir: Path, config: dict) -> bool:
         yaml_path = project_dir / config.get("pubspec_yaml", "pubspec.yaml")
