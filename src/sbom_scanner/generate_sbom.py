@@ -49,9 +49,24 @@ def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
     options = config.get("options", {})
     workers = options.get("workers", 20)
 
-    app_name = project_config.get("name", project_dir.name)
-    app_version = project_config.get("version", "0.0.0")
+    app_name = project_config.get("name", "")
+    app_version = project_config.get("version", "")
     app_description = project_config.get("description", "")
+
+    # Auto-detect name/version from ecosystem manifests if not set in config
+    if not app_name or not app_version:
+        for eco in REGISTRY:
+            info = eco.read_project_info(project_dir)
+            if info:
+                if not app_name:
+                    app_name = info[0]
+                if not app_version:
+                    app_version = info[1] or "0.0.0"
+                break
+    if not app_name:
+        app_name = project_dir.name
+    if not app_version:
+        app_version = "0.0.0"
 
     # Detect ecosystems — config value can be a dict (single) or a list (multi)
     active_ecosystems: list[tuple] = []  # (eco, eco_config, label)
