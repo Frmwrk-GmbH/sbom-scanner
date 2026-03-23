@@ -69,12 +69,16 @@ def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
         app_version = "0.0.0"
 
     # Detect ecosystems — config value can be a dict (single) or a list (multi)
+    # If sources section exists in config, only scan listed ecosystems (explicit mode).
+    # If no sources section, auto-detect all ecosystems (implicit mode).
+    explicit_sources = bool(sources_config)
     active_ecosystems: list[tuple] = []  # (eco, eco_config, label)
     for eco in REGISTRY:
         raw = sources_config.get(eco.name)
-        # Normalize: None -> [{}], dict -> [dict], list -> list
         if raw is None:
-            eco_configs = [{}]
+            if explicit_sources:
+                continue  # Not listed in config → skip
+            eco_configs = [{}]  # No config → auto-detect
         elif isinstance(raw, list):
             eco_configs = raw
         else:
