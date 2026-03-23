@@ -106,7 +106,8 @@ project:
 ```yaml
 project:
   name: my-app
-  version: "2.0.0"
+  version: "2.0.0"                    # fixed version, or omit for auto-detect
+  # version_script: ./get-version.sh  # custom script that prints version to stdout
   description: "My application"
 
 # Only specify when paths differ from defaults.
@@ -298,7 +299,7 @@ generate_report(sbom_path, project / "sbom-report.html", skip_cve=True)
 |---|---|---|---|---|
 | npm | `package-lock.json` (v1/v2/v3), `yarn.lock` (v1) | npmjs.org | `include_dev`, `include_optional` | Yes |
 | PyPI | `requirements.txt` (pip-compile or plain) | pypi.org | `dep_tree_method` | Yes |
-| Dart/Flutter | `pubspec.lock` | pub.dev | `include_dev` | — |
+| Dart/Flutter | `pubspec.lock` | pub.dev | `include_dev` | Yes |
 | Maven/Gradle | `build.gradle` / `build.gradle.kts` | Maven Central + Google Maven | `configurations` (multi-select), `include_subprojects` | — |
 | Rust/Cargo | `Cargo.lock` | crates.io | `include_dev`, `include_build` | Yes |
 | C#/NuGet | `.sln` + `.csproj`, `packages.config` | nuget.org | `include_dev`, `include_transitive` | — |
