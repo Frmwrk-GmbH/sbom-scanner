@@ -176,7 +176,7 @@ def _read_project_name(project_dir: Path, findings: list[dict]) -> tuple[str, st
 # ── Config generation ────────────────────────────────────────────────────────
 
 def generate_config(project_dir: Path, selected: list[dict], name: str, version: str,
-                    options: dict | None = None) -> str:
+                    options: dict | None = None, auto_version: bool = False) -> str:
     """Generate YAML config as a string."""
     lines = [
         _("# SBOM Scanner — Configuration"),
@@ -184,9 +184,12 @@ def generate_config(project_dir: Path, selected: list[dict], name: str, version:
         "",
         "project:",
         f'  name: "{name}"',
-        f'  version: "{version}"',
-        "",
     ]
+    if not auto_version:
+        lines.append(f'  version: "{version}"')
+    else:
+        lines.append(f'  # version: auto-detected from manifest')
+    lines.append("")
 
     by_eco: dict[str, list[dict]] = {}
     for item in selected:
@@ -360,6 +363,7 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
 
     name = default_name
     version = default_version
+    auto_version = True  # True = detect from manifest, False = use fixed value
 
     options = {
         "skip_cve": False,
@@ -427,7 +431,8 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
         enabled_count = sum(1 for f in findings if f["enabled"])
         menu_choices = []
         menu_choices.append({"name": "  ✎  " + _("Project name: {}").format(name), "value": ("name", None)})
-        menu_choices.append({"name": "  ✎  " + _("Version: {}").format(version), "value": ("version", None)})
+        ver_display = f"{version} (auto)" if auto_version else version
+        menu_choices.append({"name": "  ✎  " + _("Version: {}").format(ver_display), "value": ("version", None)})
         menu_choices.append(Separator())
         source_start_idx = len(menu_choices)
         for i, f in enumerate(findings):
@@ -476,7 +481,21 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
             continue
 
         if action == "version":
-            version = inquirer.text(message=_("Version:"), default=version).execute()
+            ver_choice = inquirer.select(
+                message=_("Version:"),
+                choices=[
+                    {"name": f"  ⚡ Auto-detect from manifest ({default_version})", "value": "auto"},
+                    {"name": f"  ✎  Fixed: {version}", "value": "fixed"},
+                ],
+                default="auto" if auto_version else "fixed",
+                instruction="",
+            ).execute()
+            if ver_choice == "auto":
+                auto_version = True
+                version = default_version
+            else:
+                auto_version = False
+                version = inquirer.text(message=_("Version:"), default=version).execute()
             next_default = ("toggle", 0) if findings else ("options", None)
             continue
 
@@ -638,7 +657,7 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
         console.print("[yellow]" + _("No sources selected.") + "[/]")
         return
 
-    config_str = generate_config(project_dir, selected, name, version, options)
+    config_str = generate_config(project_dir, selected, name, version, options, auto_version=auto_version)
 
     console.print()
     console.print(Panel(
@@ -719,6 +738,7 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
 
     name = default_name
     version = default_version
+    auto_version = True
 
     options = {"skip_cve": False, "fetch_licenses": False, "pdf": False, "simple": False, "workers": 20}
 
@@ -852,7 +872,7 @@ def _run_simple_interactive(project_dir: Path, findings: list[dict], default_nam
         print(_("No sources selected."))
         return
 
-    config_str = generate_config(project_dir, selected, name, version, options)
+    config_str = generate_config(project_dir, selected, name, version, options, auto_version=auto_version)
 
     print(f"\n{'─' * 60}")
     print(config_str)
@@ -917,7 +937,7 @@ def main():
         for item in selected:
             item["label"] = item["label_suggestion"]
             item["tags"] = []
-        config_str = generate_config(project_dir, selected, default_name, default_version)
+        config_str = generate_config(project_dir, selected, default_name, default_version, auto_version=True)
 
         try:
             from rich.console import Console
