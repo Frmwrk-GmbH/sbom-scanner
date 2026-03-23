@@ -363,6 +363,7 @@ def _run_interactive(project_dir: Path, findings: list[dict], default_name: str,
 
     options = {
         "skip_cve": False,
+        "fetch_licenses": False,
         "pdf": False,
         "simple": False,
         "workers": 20,
