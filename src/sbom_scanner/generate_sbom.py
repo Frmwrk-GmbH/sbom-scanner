@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import json
+import subprocess
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -40,6 +41,21 @@ def load_config(config_path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _run_version_script(project_dir: Path, script: str) -> str:
+    """Run a version script and return its stdout as version string."""
+    script_path = project_dir / script
+    try:
+        result = subprocess.run(
+            [str(script_path)],
+            capture_output=True, text=True, cwd=project_dir, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
+        pass
+    return ""
+
+
 def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
     # Lazy import so the module can be loaded even without ecosystem packages installed
     from .ecosystems import REGISTRY
@@ -53,7 +69,18 @@ def generate_sbom(project_dir: Path, config: dict, output_path: Path) -> None:
     app_version = project_config.get("version", "")
     app_description = project_config.get("description", "")
 
-    # Auto-detect name/version from ecosystem manifests if not set in config
+    # Auto-detect version: custom script > ecosystem manifest > fallback
+    if not app_version:
+        version_script = project_config.get("version_script", "")
+        if version_script:
+            app_version = _run_version_script(project_dir, version_script)
+        else:
+            # Try well-known script name
+            script_path = project_dir / ".sbom-version"
+            if script_path.exists():
+                app_version = _run_version_script(project_dir, ".sbom-version")
+
+    # Auto-detect name/version from ecosystem manifests
     if not app_name or not app_version:
         for eco in REGISTRY:
             info = eco.read_project_info(project_dir)
